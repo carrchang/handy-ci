@@ -171,6 +171,6 @@ $ export PATH=$PATH:$GOPATH/bin
 
 ```bash
 go get github.com/carrchang/handy-ci
-cdt  $GOPATH/src/github.com/carrchang/handy-ci
+cd $GOPATH/src/github.com/carrchang/handy-ci
 go install
 ```
