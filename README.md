@@ -143,3 +143,34 @@ handy-ci mvn clean install -R deployer-kubernetes
 ```
 handy-ci npm outdated -C
 ``` 
+
+### Build and Install the Binaries from Source
+
+#### Prerequisite Tools
+
+* [Git](https://git-scm.com/)
+* [Go (at least Go 1.11)](https://golang.org/dl/)
+
+#### Setup GO
+
+Set $GOPATH environment variable:
+```
+$ export GOPATH=$(go env GOPATH)
+```
+
+To learn more about the GOPATH environment variable, see 'go help gopath'.
+
+To use a custom workspace location, [set the GOPATH environment variable](https://golang.org/wiki/SettingGOPATH).
+
+Add the workspace's bin subdirectory to your PATH:
+```
+$ export PATH=$PATH:$GOPATH/bin
+```
+
+#### Install from GitHub
+
+```bash
+go get github.com/carrchang/handy-ci
+cdt  $GOPATH/src/github.com/carrchang/handy-ci
+go install
+```
