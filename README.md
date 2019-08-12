@@ -151,28 +151,12 @@ handy-ci npm outdated -C
 #### Prerequisite Tools
 
 * [Git](https://git-scm.com/)
-* [Go](https://golang.org/dl/)
-
-#### Setup GO
-
-Set $GOPATH environment variable:
-```
-$ export GOPATH=$(go env GOPATH)
-```
-
-To learn more about the GOPATH environment variable, see 'go help gopath'.
-
-To use a custom workspace location, [set the GOPATH environment variable](https://golang.org/wiki/SettingGOPATH).
-
-Add the workspace's bin subdirectory to your PATH:
-```
-$ export PATH=$PATH:$GOPATH/bin
-```
+* [Go (at least Go 1.11)](https://golang.org/dl/)
 
 #### Install from GitHub
 
 ```bash
-go get github.com/carrchang/handy-ci
-cd $GOPATH/src/github.com/carrchang/handy-ci
+git clone github.com/carrchang/handy-ci
+cd handy-ci
 go install
 ```
