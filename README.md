@@ -38,7 +38,7 @@ Options:
   -G, --group string        Execute command in group
   -R, --repository string   Execute command in repository
   -C, --continue            Skip failed command and continue
-      --skip string         Skipped comma-delimited list of repositories
+      --skip string         Skip execution in comma-delimited list of repositories
       --config string       Config file (default is $HOME/.handy-ci/config.yaml)
 
 You can use original options of "git", "mvn", "npm" or any command line tools as additional options.
