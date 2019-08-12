@@ -71,7 +71,7 @@ func initConfig() {
     }
 
     // Search config in home directory with name ".handy-ci" (without extension).
-    viper.AddConfigPath(home + "/." + util.HandyCiName)
+    viper.AddConfigPath(home + string(os.PathSeparator) + "." + util.HandyCiName)
     viper.SetConfigName(util.HandyCiFlagConfig)
   }
 

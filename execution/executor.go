@@ -163,6 +163,8 @@ func execInRepository(
 	workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool) (int, error) {
 	executions, err := executionParser.Parse(cmd, args, workspace, group, repository)
 
+
+
 	for i, execution := range executions {
 		if err != nil && !toBeContinue {
 			util.Printf("%s", err.Error())

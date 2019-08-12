@@ -22,12 +22,13 @@ THE SOFTWARE.
 package util
 
 import (
-	"fmt"
-	"strings"
+  "fmt"
+  "os"
+  "strings"
 
-	"github.com/spf13/pflag"
+  "github.com/spf13/pflag"
 
-	"github.com/carrchang/handy-ci/config"
+  "github.com/carrchang/handy-ci/config"
 )
 
 const HandyCiName = "handy-ci"
@@ -45,126 +46,126 @@ const HandyCiFlagConfig = "config"
 const HandyCiFlagHelp = "help"
 
 func Workspaces() []config.Workspace {
-	return config.HandyCiConfig.Workspaces
+  return config.HandyCiConfig.Workspaces
 }
 
 func Groups(workspaceName string) []config.Group {
-	var groups []config.Group
+  var groups []config.Group
 
-	for _, workspace := range config.HandyCiConfig.Workspaces {
-		if workspace.Name == workspaceName {
-			groups = workspace.Groups
-		}
-	}
+  for _, workspace := range config.HandyCiConfig.Workspaces {
+    if workspace.Name == workspaceName {
+      groups = workspace.Groups
+    }
+  }
 
-	return groups
+  return groups
 }
 
 func GroupPath(workspace config.Workspace, group config.Group) string {
-	rootPath := workspace.Root
+  rootPath := workspace.Root
 
-	rootPath = strings.TrimSuffix(rootPath, "/")
+  rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
 
-	return fmt.Sprintf("%s/%s", rootPath, group.Name)
+  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, group.Name)
 }
 
 func RepositoryPath(workspace config.Workspace, group config.Group, repository config.Repository) string {
-	rootPath := GroupPath(workspace, group)
+  rootPath := GroupPath(workspace, group)
 
-	rootPath = strings.TrimSuffix(rootPath, "/")
+  rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
 
-	return fmt.Sprintf("%s/%s", rootPath, repository.Name)
+  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, repository.Name)
 }
 
 func RepositoryRemoteURL(repository config.Repository, remoteName string) string {
-	var remoteUrl string
+  var remoteUrl string
 
-	for _, remote := range repository.Remotes {
-		if remote.Name == remoteName {
-			remoteUrl = remote.URL
-		}
-	}
+  for _, remote := range repository.Remotes {
+    if remote.Name == remoteName {
+      remoteUrl = remote.URL
+    }
+  }
 
-	return remoteUrl
+  return remoteUrl
 }
 
 func Printf(format string, args ...interface{}) {
-	message := fmt.Sprintf(format, args...)
+  message := fmt.Sprintf(format, args...)
 
-	if message != "" {
-		fmt.Println("[Handy CI] " + message)
-	}
+  if message != "" {
+    fmt.Println("[Handy CI] " + message)
+  }
 }
 
 func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
-	var cleanedArgs []string
+  var cleanedArgs []string
 
-	for i := 0; i < len(args); i++ {
-		if (args[i] == "--"+HandyCiFlagWorkspace || args[i] == "-"+HandyCiFlagWorkspaceShorthand) && len(args) >= i+1 {
-			flags.Set(HandyCiFlagWorkspace, args[i+1])
+  for i := 0; i < len(args); i++ {
+    if (args[i] == "--"+HandyCiFlagWorkspace || args[i] == "-"+HandyCiFlagWorkspaceShorthand) && len(args) >= i+1 {
+      flags.Set(HandyCiFlagWorkspace, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if (args[i] == "--"+HandyCiFlagGroup || args[i] == "-"+HandyCiFlagGroupShorthand) && len(args) >= i+1 {
-			flags.Set(HandyCiFlagGroup, args[i+1])
+    if (args[i] == "--"+HandyCiFlagGroup || args[i] == "-"+HandyCiFlagGroupShorthand) && len(args) >= i+1 {
+      flags.Set(HandyCiFlagGroup, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if (args[i] == "--"+HandyCiFlagRepository || args[i] == "-"+HandyCiFlagRepositoryShorthand) && len(args) >= i+1 {
-			flags.Set(HandyCiFlagRepository, args[i+1])
+    if (args[i] == "--"+HandyCiFlagRepository || args[i] == "-"+HandyCiFlagRepositoryShorthand) && len(args) >= i+1 {
+      flags.Set(HandyCiFlagRepository, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if args[i] == "--"+HandyCiFlagContinue || args[i] == "-"+HandyCiFlagContinueShorthand {
-			flags.Set(HandyCiFlagContinue, "true")
+    if args[i] == "--"+HandyCiFlagContinue || args[i] == "-"+HandyCiFlagContinueShorthand {
+      flags.Set(HandyCiFlagContinue, "true")
 
-			continue
-		}
+      continue
+    }
 
-		if args[i] == "--"+HandyCiFlagSkip && len(args) >= i+1 {
-			flags.Set(HandyCiFlagSkip, args[i+1])
+    if args[i] == "--"+HandyCiFlagSkip && len(args) >= i+1 {
+      flags.Set(HandyCiFlagSkip, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if args[i] == "--"+HandyCiFlagConfig && len(args) >= i+1 {
-			flags.Set(HandyCiFlagConfig, args[i+1])
+    if args[i] == "--"+HandyCiFlagConfig && len(args) >= i+1 {
+      flags.Set(HandyCiFlagConfig, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if args[i] == "--"+HandyCiFlagHelp {
-			flags.Set(HandyCiFlagHelp, "true")
+    if args[i] == "--"+HandyCiFlagHelp {
+      flags.Set(HandyCiFlagHelp, "true")
 
-			continue
-		}
+      continue
+    }
 
-		cleanedArgs = append(cleanedArgs, args[i])
-	}
+    cleanedArgs = append(cleanedArgs, args[i])
+  }
 
-	return cleanedArgs
+  return cleanedArgs
 }
 
 func ContainArgs(args []string, arg string) bool {
-	var currentArg string
-	for _, currentArg = range args {
-		if currentArg == arg {
-			return true
-		}
-	}
+  var currentArg string
+  for _, currentArg = range args {
+    if currentArg == arg {
+      return true
+    }
+  }
 
-	return false
+  return false
 }
