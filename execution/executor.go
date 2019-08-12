@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -182,9 +181,10 @@ func execInRepository(
 
 		cmd := exec.CommandContext(context, execution.Command, execution.Args...)
 		cmd.Dir = execution.Path
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			Setpgid: true,
-		}
+
+		//cmd.SysProcAttr = &syscall.SysProcAttr{
+		//	Setpgid: true,
+		//}
 
 		cmdReader, err := cmd.StdoutPipe()
 		if err != nil && !toBeContinue {
