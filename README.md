@@ -24,7 +24,8 @@ Handy CI is a tool for managing and building multi-repository source code on dev
 Handy CI is a tool for managing and building multi-repository source code on developer host.
 
 Usage:
-  handy-ci [Options] COMMAND
+
+  handy-ci COMMAND [OPTIONS]
 
 Commands:
   exec        Execute any command
@@ -33,11 +34,12 @@ Commands:
   npm         Execute npm command
 
 Options:
-      --config string       Config file (default is $HOME/.handy-ci/config.yaml)
-  -C, --continue            Skip failed command and continue
+  -W, --workspace string    Execute command in workspace
   -G, --group string        Execute command in group
   -R, --repository string   Execute command in repository
-  -W, --workspace string    Execute command in workspace
+  -C, --continue            Skip failed command and continue
+      --skip string         Skipped comma-delimited list of repositories
+      --config string       Config file (default is $HOME/.handy-ci/config.yaml)
 
 You can use original options of "git", "mvn", "npm" or any command line tools as additional options.
 

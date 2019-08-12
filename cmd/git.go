@@ -22,35 +22,31 @@ THE SOFTWARE.
 package cmd
 
 import (
-  "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
-  "github.com/carrchang/handy-ci/execution"
-  "github.com/carrchang/handy-ci/util"
+	"github.com/carrchang/handy-ci/execution"
 )
 
 // gitCmd represents the git command
 var gitCmd = &cobra.Command{
-  Use:                "git",
-  Short:              "Execute Git command",
-  DisableFlagParsing: true,
-  Run: func(cmd *cobra.Command, args []string) {
-    execution.Execute(cmd, args, execution.GitExecution{
-      Command: "git",
-      Args:    util.CleanUpArgs(args),
-    })
-  },
+	Use:                "git",
+	Short:              "Execute Git command",
+	DisableFlagParsing: true,
+	Run: func(cmd *cobra.Command, args []string) {
+		execution.Execute(cmd, args, execution.GitExecution{})
+	},
 }
 
 func init() {
-  rootCmd.AddCommand(gitCmd)
+	rootCmd.AddCommand(gitCmd)
 
-  // Here you will define your flags and configuration settings.
+	// Here you will define your flags and configuration settings.
 
-  // Cobra supports Persistent Flags which will work for this command
-  // and all subcommands, e.g.:
-  //gitCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	//gitCmd.PersistentFlags().String("foo", "", "A help for foo")
 
-  // Cobra supports local flags which will only run when this command
-  // is called directly, e.g.:
-  // execCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// execCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -22,38 +22,40 @@ THE SOFTWARE.
 package execution
 
 import (
-  "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
-  "github.com/carrchang/handy-ci/config"
-  "github.com/carrchang/handy-ci/util"
+	"github.com/carrchang/handy-ci/config"
+	"github.com/carrchang/handy-ci/util"
 )
 
 type ExecExecution struct {
-  Command string
-  Args    []string
+}
+
+func (s ExecExecution) CheckArgs(cmd *cobra.Command, args []string) error {
+	return nil
 }
 
 func (s ExecExecution) Parse(
-  cmd *cobra.Command,
-  workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
-  path := util.RepositoryPath(workspace, group, repository)
+	cmd *cobra.Command, args []string,
+	workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
+	path := util.RepositoryPath(workspace, group, repository)
 
-  var command string
-  var args []string
+	var command string
+	var executionArgs []string
 
-  for i := 0; i < len(s.Args); i++ {
-    if i == 0 {
-      command = s.Args[i]
-    } else {
-      args = append(args, s.Args[i])
-    }
-  }
+	for i := 0; i < len(args); i++ {
+		if i == 0 {
+			command = args[i]
+		} else {
+			executionArgs = append(executionArgs, args[i])
+		}
+	}
 
-  return []Execution{
-    {
-      Command: command,
-      Path:    path,
-      Args:    args,
-    },
-  }, nil
+	return []Execution{
+		{
+			Command: command,
+			Path:    path,
+			Args:    executionArgs,
+		},
+	}, nil
 }

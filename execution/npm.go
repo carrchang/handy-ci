@@ -22,34 +22,36 @@ THE SOFTWARE.
 package execution
 
 import (
-  "fmt"
-  "strings"
+	"fmt"
+	"strings"
 
-  "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
-  "github.com/carrchang/handy-ci/config"
-  "github.com/carrchang/handy-ci/util"
+	"github.com/carrchang/handy-ci/config"
+	"github.com/carrchang/handy-ci/util"
 )
 
 type NpmExecution struct {
-  Command string
-  Args    []string
+}
+
+func (s NpmExecution) CheckArgs(cmd *cobra.Command, args []string) error {
+	return nil
 }
 
 func (s NpmExecution) Parse(
-  cmd *cobra.Command,
-  workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
-  path := util.RepositoryPath(workspace, group, repository)
+	cmd *cobra.Command, args []string,
+	workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
+	path := util.RepositoryPath(workspace, group, repository)
 
-  var executions []Execution
+	var executions []Execution
 
-  for _, npm := range repository.Npms {
-    executions = append(executions, Execution{
-      Command: s.Command,
-      Path:    strings.TrimRight(fmt.Sprintf("%s/%s", path, strings.Trim(npm.Path, "/")), "/"),
-      Args:    s.Args,
-    })
-  }
+	for _, npm := range repository.Npms {
+		executions = append(executions, Execution{
+			Command: cmd.Use,
+			Path:    strings.TrimRight(fmt.Sprintf("%s/%s", path, strings.Trim(npm.Path, "/")), "/"),
+			Args:    args,
+		})
+	}
 
-  return executions, nil
+	return executions, nil
 }

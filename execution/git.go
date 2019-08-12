@@ -22,98 +22,87 @@ THE SOFTWARE.
 package execution
 
 import (
-  "os"
+	"os"
 
-  "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 
-  "github.com/carrchang/handy-ci/config"
-  "github.com/carrchang/handy-ci/util"
+	"github.com/carrchang/handy-ci/config"
+	"github.com/carrchang/handy-ci/util"
 )
 
 type GitExecution struct {
-  Command string
-  Args    []string
+}
+
+func (s GitExecution) CheckArgs(cmd *cobra.Command, args []string) error {
+	return nil
 }
 
 func (s GitExecution) Parse(
-  cmd *cobra.Command,
-  workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
-  args := s.Args
+	cmd *cobra.Command, args []string,
+	workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
+	var path string
+	var err error
 
-  var path string
-  var err error
+	path = util.RepositoryPath(workspace, group, repository)
 
-  path = util.RepositoryPath(workspace, group, repository)
+	if util.ContainArgs(args, "clone") {
+		_, err = os.Stat(path)
 
-  if containArg(s.Args, "clone") {
-    _, err = os.Stat(path)
+		if os.IsNotExist(err) {
+			err = nil
+		}
 
-    if os.IsNotExist(err) {
-      err = nil
-    }
+		path = util.GroupPath(workspace, group)
+		args = append(args, util.RepositoryRemoteURL(repository, "origin"))
+		args = append(args, repository.Name)
 
-    path = util.GroupPath(workspace, group)
-    args = append(args, util.RepositoryRemoteURL(repository, "origin"))
-    args = append(args, repository.Name)
+		_, err2 := os.Stat(path)
+		if os.IsNotExist(err2) {
+			os.MkdirAll(path, 0755)
+		}
+	}
 
-    _, err2 := os.Stat(path)
-    if os.IsNotExist(err2) {
-      os.MkdirAll(path, 0755)
-    }
-  }
+	if util.ContainArgs(args, "remote") && util.ContainArgs(args, "check") {
+		args = []string{}
+		args = append(args, "remote")
 
-  if containArg(s.Args, "remote") && containArg(s.Args, "check") {
-    args = []string{}
-    args = append(args, "remote")
+		var executions []Execution
+		var remote config.GitRemote
+		for _, remote = range repository.Remotes {
+			if remote.Name != "origin" {
+				var executionArgs []string
 
-    var executions []Execution
-    var remote config.GitRemote
-    for _, remote = range repository.Remotes {
-      if remote.Name != "origin" {
-        var executionArgs []string
+				executionArgs = args
+				executionArgs = append(executionArgs, "remove")
+				executionArgs = append(executionArgs, remote.Name)
 
-        executionArgs = args
-        executionArgs = append(executionArgs, "remove")
-        executionArgs = append(executionArgs, remote.Name)
+				executions = append(executions, Execution{
+					Command: cmd.Use,
+					Path:    path,
+					Args:    executionArgs,
+				})
 
-        executions = append(executions, Execution{
-          Command: s.Command,
-          Path:    path,
-          Args:    executionArgs,
-        })
+				executionArgs = args
+				executionArgs = append(executionArgs, "add")
+				executionArgs = append(executionArgs, remote.Name)
+				executionArgs = append(executionArgs, remote.URL)
 
-        executionArgs = args
-        executionArgs = append(executionArgs, "add")
-        executionArgs = append(executionArgs, remote.Name)
-        executionArgs = append(executionArgs, remote.URL)
+				executions = append(executions, Execution{
+					Command: cmd.Use,
+					Path:    path,
+					Args:    executionArgs,
+				})
+			}
+		}
 
-        executions = append(executions, Execution{
-          Command: s.Command,
-          Path:    path,
-          Args:    executionArgs,
-        })
-      }
-    }
+		return executions, nil
+	}
 
-    return executions, nil
-  }
-
-  return []Execution{
-    {
-      Command: s.Command,
-      Path:    path,
-      Args:    args,
-    },
-  }, nil
-}
-
-func containArg(args []string, arg string) bool {
-  var currentArg string
-  for _, currentArg = range args {
-    if currentArg == arg {
-      return true
-    }
-  }
-
-  return false
+	return []Execution{
+		{
+			Command: cmd.Use,
+			Path:    path,
+			Args:    args,
+		},
+	}, nil
 }
