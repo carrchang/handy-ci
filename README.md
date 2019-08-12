@@ -151,7 +151,7 @@ handy-ci npm outdated -C
 #### Prerequisite Tools
 
 * [Git](https://git-scm.com/)
-* [Go (at least Go 1.11)](https://golang.org/dl/)
+* [Go](https://golang.org/dl/)
 
 #### Setup GO
 
