@@ -3,6 +3,7 @@ module github.com/carrchang/handy-ci
 go 1.12
 
 require (
+	github.com/buger/goterm v0.0.0-20181115115552-c206103e1f37
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3

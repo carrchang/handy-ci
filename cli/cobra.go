@@ -21,58 +21,42 @@ THE SOFTWARE.
 */
 package cli
 
+import "C"
 import (
-	"github.com/spf13/cobra"
-	"golang.org/x/sys/unix"
+  "github.com/buger/goterm"
 
-	"github.com/carrchang/handy-ci/util"
+  "github.com/spf13/cobra"
+
+  "github.com/carrchang/handy-ci/util"
 )
 
 func SetupRootCommand(rootCmd *cobra.Command) {
-	cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)
+  cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)
 
-	rootCmd.SetUsageTemplate(usageTemplate)
-	rootCmd.SetHelpTemplate(helpTemplate)
+  rootCmd.SetUsageTemplate(usageTemplate)
+  rootCmd.SetHelpTemplate(helpTemplate)
 
-	rootCmd.SuggestionsMinimumDistance = 2
+  rootCmd.SuggestionsMinimumDistance = 2
 
-	rootCmd.PersistentFlags().SortFlags = false
-	rootCmd.Flags().SortFlags = false
+  rootCmd.PersistentFlags().SortFlags = false
+  rootCmd.Flags().SortFlags = false
 
-	rootCmd.PersistentFlags().StringP(
-		util.HandyCiFlagWorkspace, util.HandyCiFlagWorkspaceShorthand, "", "Execute command in workspace")
-	rootCmd.PersistentFlags().StringP(
-		util.HandyCiFlagGroup, util.HandyCiFlagGroupShorthand, "", "Execute command in group")
-	rootCmd.PersistentFlags().StringP(
-		util.HandyCiFlagRepository, util.HandyCiFlagRepositoryShorthand, "", "Execute command in repository")
-	rootCmd.PersistentFlags().BoolP(
-		util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
-	rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
-	rootCmd.PersistentFlags().String(util.HandyCiFlagConfig, "", "Config file (default is $HOME/.handy-ci/config.yaml)")
-	rootCmd.PersistentFlags().Bool(util.HandyCiFlagHelp, false, "Print usage")
-	rootCmd.PersistentFlags().Lookup(util.HandyCiFlagHelp).Hidden = true
-}
-
-type winSize struct {
-	Height uint16
-	Width  uint16
-	x      uint16
-	y      uint16
-}
-
-func getWinSize(fd uintptr) (*winSize, error) {
-	uws, err := unix.IoctlGetWinsize(int(fd), unix.TIOCGWINSZ)
-	ws := &winSize{Height: uws.Row, Width: uws.Col, x: uws.Xpixel, y: uws.Ypixel}
-	return ws, err
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagWorkspace, util.HandyCiFlagWorkspaceShorthand, "", "Execute command in workspace")
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagGroup, util.HandyCiFlagGroupShorthand, "", "Execute command in group")
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagRepository, util.HandyCiFlagRepositoryShorthand, "", "Execute command in repository")
+  rootCmd.PersistentFlags().BoolP(
+    util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
+  rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
+  rootCmd.PersistentFlags().String(util.HandyCiFlagConfig, "", "Config file (default is $HOME/.handy-ci/config.yaml)")
+  rootCmd.PersistentFlags().Bool(util.HandyCiFlagHelp, false, "Print usage")
+  rootCmd.PersistentFlags().Lookup(util.HandyCiFlagHelp).Hidden = true
 }
 
 func wrappedFlagUsages(cmd *cobra.Command) string {
-	width := 80
-	if ws, err := getWinSize(0); err == nil {
-		width = int(ws.Width)
-	}
-
-	return cmd.Flags().FlagUsagesWrapped(width - 1)
+  return cmd.Flags().FlagUsagesWrapped(goterm.Width() - 1)
 }
 
 var usageTemplate = `
