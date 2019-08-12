@@ -155,8 +155,8 @@ handy-ci npm outdated -C
 
 #### Install from GitHub
 
-```bash
-git clone github.com/carrchang/handy-ci
+```
+git clone https://github.com/carrchang/handy-ci.git
 cd handy-ci
 go install
 ```
