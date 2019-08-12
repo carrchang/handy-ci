@@ -26,6 +26,7 @@ import (
   "os"
   "strings"
 
+  "github.com/mitchellh/go-homedir"
   "github.com/spf13/pflag"
 
   "github.com/carrchang/handy-ci/config"
@@ -168,4 +169,14 @@ func ContainArgs(args []string, arg string) bool {
   }
 
   return false
+}
+
+func Home() string {
+  home, err := homedir.Dir()
+  if err != nil {
+    fmt.Println(err)
+    os.Exit(1)
+  }
+
+  return home
 }

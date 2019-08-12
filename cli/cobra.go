@@ -23,7 +23,7 @@ package cli
 
 import "C"
 import (
-  "github.com/buger/goterm"
+  "os"
 
   "github.com/spf13/cobra"
 
@@ -31,8 +31,6 @@ import (
 )
 
 func SetupRootCommand(rootCmd *cobra.Command) {
-  cobra.AddTemplateFunc("wrappedFlagUsages", wrappedFlagUsages)
-
   rootCmd.SetUsageTemplate(usageTemplate)
   rootCmd.SetHelpTemplate(helpTemplate)
 
@@ -50,13 +48,13 @@ func SetupRootCommand(rootCmd *cobra.Command) {
   rootCmd.PersistentFlags().BoolP(
     util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
   rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
-  rootCmd.PersistentFlags().String(util.HandyCiFlagConfig, "", "Config file (default is $HOME/.handy-ci/config.yaml)")
+
+  configFlagUsage := "Config file (default is " + util.Home() +
+    string(os.PathSeparator) + ".handy-ci" + string(os.PathSeparator) + "config.yaml)"
+
+  rootCmd.PersistentFlags().String(util.HandyCiFlagConfig, "", configFlagUsage)
   rootCmd.PersistentFlags().Bool(util.HandyCiFlagHelp, false, "Print usage")
   rootCmd.PersistentFlags().Lookup(util.HandyCiFlagHelp).Hidden = true
-}
-
-func wrappedFlagUsages(cmd *cobra.Command) string {
-  return cmd.Flags().FlagUsagesWrapped(goterm.Width() - 1)
 }
 
 var usageTemplate = `
@@ -77,7 +75,7 @@ Commands:
 {{- end}}
 
 Options:
-{{ wrappedFlagUsages . | trimRightSpace}}
+{{.Flags.FlagUsages | trimTrailingWhitespaces}}
 
 You can use original options of "git", "mvn", "npm" or any command line tools as additional options.
 
