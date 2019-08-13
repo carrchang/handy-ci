@@ -22,31 +22,23 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+  "github.com/spf13/cobra"
 
-	"github.com/carrchang/handy-ci/execution"
+  "github.com/carrchang/handy-ci/execution"
 )
 
-// npmCmd represents the npm command
 var npmCmd = &cobra.Command{
-	Use:                "npm",
-	Short:              "Execute npm command",
-	DisableFlagParsing: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		execution.Execute(cmd, args, execution.NpmExecution{})
-	},
+  Use:                "npm",
+  Short:              "Execute npm command",
+  DisableFlagParsing: true,
+  Run: func(cmd *cobra.Command, args []string) {
+    execution.Execute(cmd, args, execution.NpmExecution{})
+  },
 }
 
 func init() {
-	rootCmd.AddCommand(npmCmd)
+  rootCmd.AddCommand(npmCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// npmCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// npmCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+  npmCmd.PersistentFlags().SortFlags = false
+  npmCmd.Flags().SortFlags = false
 }

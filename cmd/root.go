@@ -28,7 +28,6 @@ import (
   "github.com/spf13/cobra"
   "github.com/spf13/viper"
 
-  "github.com/carrchang/handy-ci/cli"
   "github.com/carrchang/handy-ci/config"
   "github.com/carrchang/handy-ci/util"
 )
@@ -42,6 +41,40 @@ var rootCmd = &cobra.Command{
   DisableFlagParsing: true,
 }
 
+var usageTemplate = `
+{{- if ne .Long ""}}{{ .Long | trim }}{{- else }}{{ .Short | trim }}{{- end}}
+
+Usage:
+
+  {{.CommandPath}}{{- if .HasAvailableSubCommands}} COMMAND{{- end}} [OPTIONS]
+
+{{- if .HasAvailableSubCommands}}
+
+Commands:
+{{- range .Commands}}
+{{- if .IsAvailableCommand}}
+  {{rpad .Name .NamePadding }} {{.Short}}
+{{- end}}
+{{- end}}
+{{- end}}
+
+Options:
+{{.Flags.FlagUsages | trimTrailingWhitespaces}}
+
+Options can be in front of, behind, or on both sides of the command.
+
+Original options of any command can be as additional options, and be in behind of the command.
+
+{{- if .HasAvailableSubCommands}}
+
+Use "{{.CommandPath}} COMMAND --help" for more information about a command.
+{{- end}}
+
+`
+
+var helpTemplate = `
+{{if or .Runnable .HasSubCommands}}{{.UsageString}}{{end}}`
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
@@ -53,22 +86,42 @@ func Execute() {
 func init() {
   cobra.OnInitialize(initConfig)
 
-  cli.SetupRootCommand(rootCmd)
+  rootCmd.SetUsageTemplate(usageTemplate)
+  rootCmd.SetHelpTemplate(helpTemplate)
+
+  rootCmd.SuggestionsMinimumDistance = 2
+
+  rootCmd.PersistentFlags().SortFlags = false
+  rootCmd.Flags().SortFlags = false
+
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagWorkspace, util.HandyCiFlagWorkspaceShorthand, "", "Execute command in workspace")
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagGroup, util.HandyCiFlagGroupShorthand, "", "Execute command in group")
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagRepository, util.HandyCiFlagRepositoryShorthand, "", "Execute command in repository")
+  rootCmd.PersistentFlags().BoolP(
+    util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
+  rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
+
+  configFlagUsage := "Config file (default is " + util.Home() +
+    string(os.PathSeparator) + ".handy-ci" + string(os.PathSeparator) + "config.yaml)"
+
+  rootCmd.PersistentFlags().String(util.HandyCiFlagConfig, "", configFlagUsage)
+  rootCmd.PersistentFlags().Bool(util.HandyCiFlagHelp, false, "Print usage")
+  rootCmd.PersistentFlags().Lookup(util.HandyCiFlagHelp).Hidden = true
 }
 
-// initConfig reads in config file and ENV variables if set.
 func initConfig() {
   if cfgFile != "" {
-    // Use config file from the flag.
     viper.SetConfigFile(cfgFile)
   } else {
     viper.AddConfigPath(util.Home() + string(os.PathSeparator) + "." + util.HandyCiName)
     viper.SetConfigName(util.HandyCiFlagConfig)
   }
 
-  viper.AutomaticEnv() // read in environment variables that match
+  viper.AutomaticEnv()
 
-  // If a config file is found, read it in.
   if err := viper.ReadInConfig(); err != nil {
     fmt.Println("Using config file:", viper.ConfigFileUsed())
     fmt.Println(err)

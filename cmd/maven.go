@@ -22,31 +22,23 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"github.com/spf13/cobra"
+  "github.com/spf13/cobra"
 
-	"github.com/carrchang/handy-ci/execution"
+  "github.com/carrchang/handy-ci/execution"
 )
 
-// mavenCmd represents the maven command
 var mavenCmd = &cobra.Command{
-	Use:                "mvn",
-	Short:              "Execute Apache Maven command",
-	DisableFlagParsing: true,
-	Run: func(cmd *cobra.Command, args []string) {
-		execution.Execute(cmd, args, execution.MavenExecution{})
-	},
+  Use:                "mvn",
+  Short:              "Execute Apache Maven command",
+  DisableFlagParsing: true,
+  Run: func(cmd *cobra.Command, args []string) {
+    execution.Execute(cmd, args, execution.MavenExecution{})
+  },
 }
 
 func init() {
-	rootCmd.AddCommand(mavenCmd)
+  rootCmd.AddCommand(mavenCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// mavenCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// mavenCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+  mavenCmd.PersistentFlags().SortFlags = false
+  mavenCmd.Flags().SortFlags = false
 }

@@ -22,207 +22,205 @@ THE SOFTWARE.
 package execution
 
 import (
-	"bufio"
-	"context"
-	"fmt"
-	"os/exec"
-	"strings"
-	"time"
+  "bufio"
+  "context"
+  "fmt"
+  "os/exec"
+  "strings"
+  "time"
 
-	"github.com/spf13/cobra"
+  "github.com/spf13/cobra"
 
-	"github.com/carrchang/handy-ci/config"
-	"github.com/carrchang/handy-ci/util"
+  "github.com/carrchang/handy-ci/config"
+  "github.com/carrchang/handy-ci/util"
 )
 
 func Execute(cmd *cobra.Command, args []string, executionParser Parser) {
-	var err error
+  var err error
 
-	args = util.ParseFlagsAndArgs(cmd.Flags(), args)
+  args = util.ParseFlagsAndArgs(cmd.Flags(), args)
 
-	err = executionParser.CheckArgs(cmd, args)
+  err = executionParser.CheckArgs(cmd, args)
 
-	if err != nil {
-		fmt.Printf("Error:\n  %s\n", err.Error())
-		cmd.Help()
-		return
-	}
+  if err != nil {
+    fmt.Printf("Error:\n  %s\n", err.Error())
+    cmd.Help()
+    return
+  }
 
-	help, _ := cmd.Flags().GetBool("help")
+  help, _ := cmd.Flags().GetBool("help")
 
-	if help {
-		cmd.Help()
-		return
-	}
+  if help {
+    cmd.Help()
+    return
+  }
 
-	err = execInWorkspaces(cmd, args, executionParser)
+  err = execInWorkspaces(cmd, args, executionParser)
 
-	if err != nil {
-		fmt.Printf("%s\n", err.Error())
-		cmd.Help()
-		return
-	}
+  if err != nil {
+    fmt.Printf("%s\n", err.Error())
+    cmd.Help()
+    return
+  }
 }
 
 func execInWorkspaces(cmd *cobra.Command, args []string, executionParser Parser) error {
-	currentWorkspace, _ := cmd.Flags().GetString(util.HandyCiFlagWorkspace)
+  currentWorkspace, _ := cmd.Flags().GetString(util.HandyCiFlagWorkspace)
 
-	for _, workspace := range util.Workspaces() {
-		if currentWorkspace != "" {
-			if workspace.Name == currentWorkspace {
-				err := execInGroups(cmd, args, executionParser, workspace)
+  for _, workspace := range util.Workspaces() {
+    if currentWorkspace != "" {
+      if workspace.Name == currentWorkspace {
+        err := execInGroups(cmd, args, executionParser, workspace)
 
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err := execInGroups(cmd, args, executionParser, workspace)
+        if err != nil {
+          return err
+        }
+      }
+    } else {
+      err := execInGroups(cmd, args, executionParser, workspace)
 
-			if err != nil {
-				return err
-			}
-		}
-	}
+      if err != nil {
+        return err
+      }
+    }
+  }
 
-	return nil
+  return nil
 }
 
 func execInGroups(cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace) error {
-	currentGroup, _ := cmd.Flags().GetString(util.HandyCiFlagGroup)
+  currentGroup, _ := cmd.Flags().GetString(util.HandyCiFlagGroup)
 
-	for _, group := range workspace.Groups {
-		if currentGroup != "" {
-			if group.Name == currentGroup {
-				err := execInRepositories(cmd, args, executionParser, workspace, group)
+  for _, group := range workspace.Groups {
+    if currentGroup != "" {
+      if group.Name == currentGroup {
+        err := execInRepositories(cmd, args, executionParser, workspace, group)
 
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err := execInRepositories(cmd, args, executionParser, workspace, group)
+        if err != nil {
+          return err
+        }
+      }
+    } else {
+      err := execInRepositories(cmd, args, executionParser, workspace, group)
 
-			if err != nil {
-				return err
-			}
-		}
-	}
+      if err != nil {
+        return err
+      }
+    }
+  }
 
-	return nil
+  return nil
 }
 
 func execInRepositories(
-	cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
-	currentRepository, _ := cmd.Flags().GetString(util.HandyCiFlagRepository)
-	toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
+  cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
+  currentRepository, _ := cmd.Flags().GetString(util.HandyCiFlagRepository)
+  toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
 
-	skippedRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagSkip)
+  skippedRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagSkip)
 
-	var skippedRepositories []string
+  var skippedRepositories []string
 
-	for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
-		skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
-	}
+  for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
+    skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
+  }
 
-	for _, repository := range group.Repositories {
-		if util.ContainArgs(skippedRepositories, repository.Name) {
-			continue
-		}
+  for _, repository := range group.Repositories {
+    if util.ContainArgs(skippedRepositories, repository.Name) {
+      continue
+    }
 
-		if currentRepository != "" {
-			if repository.Name == currentRepository {
-				i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
+    if currentRepository != "" {
+      if repository.Name == currentRepository {
+        i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
 
-				if err != nil && !toBeContinue {
-					return err
-				}
+        if err != nil && !toBeContinue {
+          return err
+        }
 
-				if i > 0 {
-					fmt.Println()
-				}
-			}
-		} else {
-			i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
+        if i > 0 {
+          fmt.Println()
+        }
+      }
+    } else {
+      i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
 
-			if err != nil && !toBeContinue {
-				return err
-			}
+      if err != nil && !toBeContinue {
+        return err
+      }
 
-			if i > 0 {
-				fmt.Println()
-			}
-		}
-	}
+      if i > 0 {
+        fmt.Println()
+      }
+    }
+  }
 
-	return nil
+  return nil
 }
 
 func execInRepository(
-	cmd *cobra.Command, args []string, executionParser Parser,
-	workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool) (int, error) {
-	executions, err := executionParser.Parse(cmd, args, workspace, group, repository)
+  cmd *cobra.Command, args []string, executionParser Parser,
+  workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool) (int, error) {
+  executions, err := executionParser.Parse(cmd, args, workspace, group, repository)
 
+  for i, execution := range executions {
+    if err != nil && !toBeContinue {
+      util.Printf("%s", err.Error())
+      return i, err
+    }
 
+    util.Printf("PATH: %s", execution.Path)
+    util.Printf("CMD: %s %s", execution.Command, strings.Join(execution.Args, " "))
 
-	for i, execution := range executions {
-		if err != nil && !toBeContinue {
-			util.Printf("%s", err.Error())
-			return i, err
-		}
+    if execution.Skip {
+      continue
+    }
 
-		util.Printf("PATH: %s", execution.Path)
-		util.Printf("CMD: %s %s", execution.Command, strings.Join(execution.Args, " "))
+    context, cancelFn := context.WithTimeout(context.Background(), time.Hour*24)
+    defer cancelFn()
 
-		if execution.Skip {
-			continue
-		}
+    cmd := exec.CommandContext(context, execution.Command, execution.Args...)
+    cmd.Dir = execution.Path
 
-		context, cancelFn := context.WithTimeout(context.Background(), time.Hour*24)
-		defer cancelFn()
+    //cmd.SysProcAttr = &syscall.SysProcAttr{
+    //	Setpgid: true,
+    //}
 
-		cmd := exec.CommandContext(context, execution.Command, execution.Args...)
-		cmd.Dir = execution.Path
+    cmdReader, err := cmd.StdoutPipe()
+    if err != nil && !toBeContinue {
+      util.Printf("%s", err.Error())
+      return i, err
+    }
 
-		//cmd.SysProcAttr = &syscall.SysProcAttr{
-		//	Setpgid: true,
-		//}
+    done := make(chan struct{})
 
-		cmdReader, err := cmd.StdoutPipe()
-		if err != nil && !toBeContinue {
-			util.Printf("%s", err.Error())
-			return i, err
-		}
+    scanner := bufio.NewScanner(cmdReader)
+    go func() {
+      for scanner.Scan() {
+        util.Printf("%s", scanner.Text())
+      }
 
-		done := make(chan struct{})
+      done <- struct{}{}
+    }()
 
-		scanner := bufio.NewScanner(cmdReader)
-		go func() {
-			for scanner.Scan() {
-				util.Printf("%s", scanner.Text())
-			}
+    err = cmd.Start()
+    if err != nil && !toBeContinue {
+      util.Printf("%s", err.Error())
+      return i, err
+    }
 
-			done <- struct{}{}
-		}()
+    <-done
 
-		err = cmd.Start()
-		if err != nil && !toBeContinue {
-			util.Printf("%s", err.Error())
-			return i, err
-		}
+    err = cmd.Wait()
+    if err != nil && !toBeContinue {
+      util.Printf("%s", err.Error())
+      return i, err
+    }
 
-		<-done
+    if i < len(executions)-1 {
+      fmt.Println()
+    }
+  }
 
-		err = cmd.Wait()
-		if err != nil && !toBeContinue {
-			util.Printf("%s", err.Error())
-			return i, err
-		}
-
-		if i < len(executions)-1 {
-			fmt.Println()
-		}
-	}
-
-	return len(executions), nil
+  return len(executions), nil
 }
