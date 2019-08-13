@@ -55,13 +55,7 @@ func Execute(cmd *cobra.Command, args []string, executionParser Parser) {
     return
   }
 
-  err = execInWorkspaces(cmd, args, executionParser)
-
-  if err != nil {
-    fmt.Printf("%s\n", err.Error())
-    cmd.Help()
-    return
-  }
+  execInWorkspaces(cmd, args, executionParser)
 }
 
 func execInWorkspaces(cmd *cobra.Command, args []string, executionParser Parser) error {
