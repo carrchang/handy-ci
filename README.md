@@ -41,7 +41,9 @@ Options:
       --skip string         Skip execution in comma-delimited list of repositories
       --config string       Config file (default is $HOME/.handy-ci/config.yaml)
 
-You can use original options of "git", "mvn", "npm" or any command line tools as additional options.
+Options can be in front of, behind, or on both sides of the command.
+
+Original options of any command can be as additional options, and be in behind of the command.
 
 Use "handy-ci COMMAND --help" for more information about a command.
 
@@ -144,7 +146,13 @@ handy-ci mvn clean install -R deployer-kubernetes
 
 ```
 handy-ci npm outdated -C
-``` 
+```
+
+#### Use `--skip` option can skip execution in repository `deployer-kubernetes`
+
+```
+handy-ci mvn clean install -G spring-cloud --skip deployer-kubernetes
+```
 
 ### Build and Install the Binaries from Source
 
