@@ -68,10 +68,21 @@ func (s GitExecution) Parse(
 
 		var executions []Execution
 		var remote config.GitRemote
-		for _, remote = range repository.Remotes {
-			if remote.Name != "origin" {
-				var executionArgs []string
+		var executionArgs []string
 
+		for _, remote = range repository.Remotes {
+			if remote.Name == "origin" {
+				executionArgs = args
+				executionArgs = append(executionArgs, "set-url")
+				executionArgs = append(executionArgs, remote.Name)
+				executionArgs = append(executionArgs, remote.URL)
+
+				executions = append(executions, Execution{
+					Command: cmd.Use,
+					Path:    path,
+					Args:    executionArgs,
+				})
+			} else {
 				executionArgs = args
 				executionArgs = append(executionArgs, "remove")
 				executionArgs = append(executionArgs, remote.Name)
