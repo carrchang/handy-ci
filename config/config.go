@@ -56,6 +56,7 @@ type GitRemote struct {
 }
 
 type Npm struct {
+  Name string `yaml:"name"`
   Path string `yaml:"path"`
 }
 

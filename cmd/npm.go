@@ -25,6 +25,7 @@ import (
   "github.com/spf13/cobra"
 
   "github.com/carrchang/handy-ci/execution"
+  "github.com/carrchang/handy-ci/util"
 )
 
 var npmCmd = &cobra.Command{
@@ -41,4 +42,7 @@ func init() {
 
   npmCmd.PersistentFlags().SortFlags = false
   npmCmd.Flags().SortFlags = false
+
+  npmCmd.PersistentFlags().String(
+    util.HandyCiNpmFlagPackage, "", "Npm package name in repository")
 }

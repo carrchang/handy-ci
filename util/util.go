@@ -45,6 +45,7 @@ const HandyCiFlagContinueShorthand = "C"
 const HandyCiFlagSkip = "skip"
 const HandyCiFlagConfig = "config"
 const HandyCiFlagHelp = "help"
+const HandyCiNpmFlagPackage = "pkg"
 
 func Workspaces() []config.Workspace {
   return config.HandyCiConfig.Workspaces
@@ -150,6 +151,14 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
 
     if args[i] == "--"+HandyCiFlagHelp {
       flags.Set(HandyCiFlagHelp, "true")
+
+      continue
+    }
+
+    if (args[i] == "--"+HandyCiNpmFlagPackage) && len(args) >= i+1 {
+      flags.Set(HandyCiNpmFlagPackage, args[i+1])
+
+      i++
 
       continue
     }
