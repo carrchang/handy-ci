@@ -43,7 +43,7 @@ func (s NpmExecution) Parse(
   cmd *cobra.Command, args []string,
   workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
   pkg, _ := cmd.Flags().GetString(util.HandyCiNpmFlagPackage)
-  path := util.RepositoryPath(workspace, group, repository)
+  path := RepositoryPath(workspace, group, repository)
 
   var executions []Execution
 

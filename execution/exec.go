@@ -25,7 +25,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/carrchang/handy-ci/config"
-	"github.com/carrchang/handy-ci/util"
 )
 
 type ExecExecution struct {
@@ -38,7 +37,7 @@ func (s ExecExecution) CheckArgs(cmd *cobra.Command, args []string) error {
 func (s ExecExecution) Parse(
 	cmd *cobra.Command, args []string,
 	workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
-	path := util.RepositoryPath(workspace, group, repository)
+	path := RepositoryPath(workspace, group, repository)
 
 	var command string
 	var executionArgs []string

@@ -22,9 +22,9 @@ THE SOFTWARE.
 package config
 
 import (
-  "fmt"
-
   "github.com/spf13/viper"
+
+  "github.com/carrchang/handy-ci/util"
 )
 
 var HandyCiConfig *Config
@@ -63,6 +63,6 @@ type Npm struct {
 func Initialize() {
   err := viper.Unmarshal(&HandyCiConfig)
   if err != nil {
-    fmt.Printf("unable to decode into config struct, %v", err)
+    util.Printf("Unable to decode into config struct, %v", err)
   }
 }

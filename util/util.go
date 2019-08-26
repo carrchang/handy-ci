@@ -24,12 +24,9 @@ package util
 import (
   "fmt"
   "os"
-  "strings"
 
+  "github.com/logrusorgru/aurora"
   "github.com/mitchellh/go-homedir"
-  "github.com/spf13/pflag"
-
-  "github.com/carrchang/handy-ci/config"
 )
 
 const HandyCiName = "handy-ci"
@@ -47,126 +44,24 @@ const HandyCiFlagConfig = "config"
 const HandyCiFlagHelp = "help"
 const HandyCiNpmFlagPackage = "pkg"
 
-func Workspaces() []config.Workspace {
-  return config.HandyCiConfig.Workspaces
-}
+func Printf(format string, a ...interface{}) (n int, err error) {
+  output := fmt.Sprintf(format, a...)
 
-func Groups(workspaceName string) []config.Group {
-  var groups []config.Group
-
-  for _, workspace := range config.HandyCiConfig.Workspaces {
-    if workspace.Name == workspaceName {
-      groups = workspace.Groups
-    }
-  }
-
-  return groups
-}
-
-func GroupPath(workspace config.Workspace, group config.Group) string {
-  rootPath := workspace.Root
-
-  rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
-
-  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, group.Name)
-}
-
-func RepositoryPath(workspace config.Workspace, group config.Group, repository config.Repository) string {
-  rootPath := GroupPath(workspace, group)
-
-  rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
-
-  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, repository.Name)
-}
-
-func RepositoryRemoteURL(repository config.Repository, remoteName string) string {
-  var remoteUrl string
-
-  for _, remote := range repository.Remotes {
-    if remote.Name == remoteName {
-      remoteUrl = remote.URL
-    }
-  }
-
-  return remoteUrl
-}
-
-func Printf(format string, args ...interface{}) {
-  message := fmt.Sprintf(format, args...)
-
-  if message != "" {
-    fmt.Println("[Handy CI] " + message)
+  if output != "" {
+    return fmt.Print(aurora.Green("[Handy CI]"), " ", output)
+  } else {
+    return fmt.Print()
   }
 }
 
-func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
-  var cleanedArgs []string
+func Println(a ...interface{}) (n int, err error) {
+  output := fmt.Sprint(a...)
 
-  for i := 0; i < len(args); i++ {
-    if (args[i] == "--"+HandyCiFlagWorkspace || args[i] == "-"+HandyCiFlagWorkspaceShorthand) && len(args) >= i+1 {
-      flags.Set(HandyCiFlagWorkspace, args[i+1])
-
-      i++
-
-      continue
-    }
-
-    if (args[i] == "--"+HandyCiFlagGroup || args[i] == "-"+HandyCiFlagGroupShorthand) && len(args) >= i+1 {
-      flags.Set(HandyCiFlagGroup, args[i+1])
-
-      i++
-
-      continue
-    }
-
-    if (args[i] == "--"+HandyCiFlagRepository || args[i] == "-"+HandyCiFlagRepositoryShorthand) && len(args) >= i+1 {
-      flags.Set(HandyCiFlagRepository, args[i+1])
-
-      i++
-
-      continue
-    }
-
-    if args[i] == "--"+HandyCiFlagContinue || args[i] == "-"+HandyCiFlagContinueShorthand {
-      flags.Set(HandyCiFlagContinue, "true")
-
-      continue
-    }
-
-    if args[i] == "--"+HandyCiFlagSkip && len(args) >= i+1 {
-      flags.Set(HandyCiFlagSkip, args[i+1])
-
-      i++
-
-      continue
-    }
-
-    if args[i] == "--"+HandyCiFlagConfig && len(args) >= i+1 {
-      flags.Set(HandyCiFlagConfig, args[i+1])
-
-      i++
-
-      continue
-    }
-
-    if args[i] == "--"+HandyCiFlagHelp {
-      flags.Set(HandyCiFlagHelp, "true")
-
-      continue
-    }
-
-    if (args[i] == "--"+HandyCiNpmFlagPackage) && len(args) >= i+1 {
-      flags.Set(HandyCiNpmFlagPackage, args[i+1])
-
-      i++
-
-      continue
-    }
-
-    cleanedArgs = append(cleanedArgs, args[i])
+  if output != "" {
+    return fmt.Println(aurora.Green("[Handy CI]"), " ", output)
+  } else {
+    return fmt.Println()
   }
-
-  return cleanedArgs
 }
 
 func ContainArgs(args []string, arg string) bool {
@@ -183,7 +78,7 @@ func ContainArgs(args []string, arg string) bool {
 func Home() string {
   home, err := homedir.Dir()
   if err != nil {
-    fmt.Println(err)
+    Println(err)
     os.Exit(1)
   }
 

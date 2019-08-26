@@ -43,7 +43,7 @@ func (s GitExecution) Parse(
 	var path string
 	var err error
 
-	path = util.RepositoryPath(workspace, group, repository)
+	path = RepositoryPath(workspace, group, repository)
 
 	if util.ContainArgs(args, "clone") {
 		_, err = os.Stat(path)
@@ -52,8 +52,8 @@ func (s GitExecution) Parse(
 			err = nil
 		}
 
-		path = util.GroupPath(workspace, group)
-		args = append(args, util.RepositoryRemoteURL(repository, "origin"))
+		path = GroupPath(workspace, group)
+		args = append(args, RepositoryRemoteURL(repository, "origin"))
 		args = append(args, repository.Name)
 
 		_, err2 := os.Stat(path)

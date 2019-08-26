@@ -22,7 +22,6 @@ THE SOFTWARE.
 package cmd
 
 import (
-  "fmt"
   "os"
 
   "github.com/spf13/cobra"
@@ -123,8 +122,8 @@ func initConfig() {
   viper.AutomaticEnv()
 
   if err := viper.ReadInConfig(); err != nil {
-    fmt.Println("Using config file:", viper.ConfigFileUsed())
-    fmt.Println(err)
+    util.Println("Using config file:", viper.ConfigFileUsed())
+    util.Println(err)
   }
 
   config.Initialize()
