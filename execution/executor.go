@@ -129,10 +129,12 @@ func execInRepositories(
       continue
     }
 
-    if !resume && repository.Name != fromRepository {
-      continue
-    } else {
-      resume = true
+    if fromRepository != "" {
+      if !resume && repository.Name != fromRepository {
+        continue
+      } else {
+        resume = true
+      }
     }
 
     if currentRepository != "" {
