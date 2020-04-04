@@ -102,6 +102,8 @@ func init() {
   rootCmd.PersistentFlags().BoolP(
     util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
   rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
+  rootCmd.PersistentFlags().StringP(
+    util.HandyCiFlagFrom, util.HandyCiFlagFromShorthand, "", "Execute command from repository to end")
 
   configFlagUsage := "Config file (default is " + util.Home() +
     string(os.PathSeparator) + ".handy-ci" + string(os.PathSeparator) + "config.yaml)"

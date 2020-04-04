@@ -112,6 +112,7 @@ func execInRepositories(
   cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
   currentRepository, _ := cmd.Flags().GetString(util.HandyCiFlagRepository)
   toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
+  fromRepository, _ := cmd.Flags().GetString(util.HandyCiFlagFrom)
 
   skippedRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagSkip)
 
@@ -121,9 +122,17 @@ func execInRepositories(
     skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
   }
 
+  var resume bool
+
   for _, repository := range group.Repositories {
     if util.ContainArgs(skippedRepositories, repository.Name) {
       continue
+    }
+
+    if !resume && repository.Name != fromRepository {
+      continue
+    } else {
+      resume = true
     }
 
     if currentRepository != "" {
@@ -290,6 +299,15 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
       continue
     }
 
+    if (args[i] == "--"+util.HandyCiFlagFrom || args[i] == "-"+util.HandyCiFlagFromShorthand) &&
+      len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagFrom, args[i+1])
+
+      i++
+
+      continue
+    }
+
     if args[i] == "--"+util.HandyCiFlagSkip && len(args) >= i+1 {
       flags.Set(util.HandyCiFlagSkip, args[i+1])
 
@@ -355,5 +373,5 @@ func (e executionWriter) Write(p []byte) (int, error) {
     fmt.Print(output)
   }
 
-  return len(p), nil;
+  return len(p), nil
 }
