@@ -110,7 +110,14 @@ func execInGroups(cmd *cobra.Command, args []string, executionParser Parser, wor
 
 func execInRepositories(
 	cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
-	currentRepository, _ := cmd.Flags().GetString(util.HandyCiFlagRepository)
+	targetRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagRepositories)
+
+	var targetRepositories []string
+
+	for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
+		targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
+	}
+
 	toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
 	fromRepository, _ := cmd.Flags().GetString(util.HandyCiFlagFrom)
 
@@ -137,8 +144,8 @@ func execInRepositories(
 			continue
 		}
 
-		if currentRepository != "" {
-			if repository.Name == currentRepository {
+		if targetRepositoriesInString != "" {
+			if util.ContainArgs(targetRepositories, repository.Name) {
 				i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
 
 				if err != nil && !toBeContinue {
@@ -286,9 +293,9 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
 			continue
 		}
 
-		if (args[i] == "--"+util.HandyCiFlagRepository || args[i] == "-"+util.HandyCiFlagRepositoryShorthand) &&
+		if (args[i] == "--"+util.HandyCiFlagRepositories || args[i] == "-"+util.HandyCiFlagRepositoriesShorthand) &&
 			len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagRepository, args[i+1])
+			flags.Set(util.HandyCiFlagRepositories, args[i+1])
 
 			i++
 

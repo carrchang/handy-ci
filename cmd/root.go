@@ -98,7 +98,8 @@ func init() {
   rootCmd.PersistentFlags().StringP(
     util.HandyCiFlagGroup, util.HandyCiFlagGroupShorthand, "", "Execute command in group")
   rootCmd.PersistentFlags().StringP(
-    util.HandyCiFlagRepository, util.HandyCiFlagRepositoryShorthand, "", "Execute command in repository")
+    util.HandyCiFlagRepositories, util.HandyCiFlagRepositoriesShorthand,
+    "", "Execute command in comma-delimited list of repositories")
   rootCmd.PersistentFlags().BoolP(
     util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
   rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
