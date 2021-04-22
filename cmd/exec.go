@@ -1,6 +1,7 @@
 package cmd
 
 import (
+  "github.com/carrchang/handy-ci/util"
   "github.com/spf13/cobra"
 
   "github.com/carrchang/handy-ci/execution"
@@ -20,4 +21,6 @@ func init() {
 
   execCmd.PersistentFlags().SortFlags = false
   execCmd.Flags().SortFlags = false
+
+  execCmd.PersistentFlags().Bool(util.HandyCiExecFlagNonStrict, false, "Try to execute undefined command")
 }

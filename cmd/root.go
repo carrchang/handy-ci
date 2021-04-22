@@ -81,6 +81,7 @@ func init() {
     "", "Execute command in comma-delimited list of repositories")
   rootCmd.PersistentFlags().BoolP(
     util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
+  rootCmd.PersistentFlags().Bool(util.HandyCiFlagDryRun, false, "Only print the command and execution path")
   rootCmd.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
   rootCmd.PersistentFlags().StringP(
     util.HandyCiFlagFrom, util.HandyCiFlagFromShorthand, "", "Execute command from repository to end")

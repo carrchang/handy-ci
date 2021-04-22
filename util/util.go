@@ -20,10 +20,11 @@ const HandyCiFlagContinue = "continue"
 const HandyCiFlagContinueShorthand = "C"
 const HandyCiFlagFrom = "from"
 const HandyCiFlagFromShorthand = "F"
+const HandyCiFlagDryRun = "dry-run"
 const HandyCiFlagSkip = "skip"
 const HandyCiFlagConfig = "config"
 const HandyCiFlagHelp = "help"
-const HandyCiNpmFlagPackage = "pkg"
+const HandyCiExecFlagNonStrict = "non-strict"
 
 func Printf(format string, a ...interface{}) (n int, err error) {
   output := fmt.Sprintf(format, a...)

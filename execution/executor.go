@@ -1,364 +1,362 @@
 package execution
 
 import (
-	"bytes"
-	"fmt"
-	"io"
-	"os/exec"
-	"strings"
-	"sync"
+  "bytes"
+  "fmt"
+  "io"
+  "os/exec"
+  "strings"
+  "sync"
 
-	"github.com/logrusorgru/aurora"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
+  "github.com/logrusorgru/aurora"
+  "github.com/spf13/cobra"
+  "github.com/spf13/pflag"
 
-	"github.com/carrchang/handy-ci/config"
-	"github.com/carrchang/handy-ci/util"
+  "github.com/carrchang/handy-ci/config"
+  "github.com/carrchang/handy-ci/util"
 )
 
 func Execute(cmd *cobra.Command, args []string, executionParser Parser) {
-	var err error
+  var err error
 
-	args = ParseFlagsAndArgs(cmd.Flags(), args)
+  args = ParseFlagsAndArgs(cmd.Flags(), args)
 
-	err = executionParser.CheckArgs(cmd, args)
+  err = executionParser.CheckArgs(cmd, args)
 
-	if err != nil {
-		util.Printf("Error:\n  %v\n", err)
-		cmd.Help()
-		return
-	}
+  if err != nil {
+    util.Printf("Error:\n  %v\n", err)
+    cmd.Help()
+    return
+  }
 
-	help, _ := cmd.Flags().GetBool("help")
+  help, _ := cmd.Flags().GetBool("help")
 
-	if help {
-		cmd.Help()
-		return
-	}
+  if help {
+    cmd.Help()
+    return
+  }
 
-	execInWorkspaces(cmd, args, executionParser)
+  execInWorkspaces(cmd, args, executionParser)
 }
 
 func execInWorkspaces(cmd *cobra.Command, args []string, executionParser Parser) error {
-	currentWorkspace, _ := cmd.Flags().GetString(util.HandyCiFlagWorkspace)
+  currentWorkspace, _ := cmd.Flags().GetString(util.HandyCiFlagWorkspace)
 
-	for _, workspace := range Workspaces() {
-		if currentWorkspace != "" {
-			if workspace.Name == currentWorkspace {
-				err := execInGroups(cmd, args, executionParser, workspace)
+  for _, workspace := range Workspaces() {
+    if currentWorkspace != "" {
+      if workspace.Name == currentWorkspace {
+        err := execInGroups(cmd, args, executionParser, workspace)
 
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err := execInGroups(cmd, args, executionParser, workspace)
+        if err != nil {
+          return err
+        }
+      }
+    } else {
+      err := execInGroups(cmd, args, executionParser, workspace)
 
-			if err != nil {
-				return err
-			}
-		}
-	}
+      if err != nil {
+        return err
+      }
+    }
+  }
 
-	return nil
+  return nil
 }
 
 func execInGroups(cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace) error {
-	currentGroup, _ := cmd.Flags().GetString(util.HandyCiFlagGroup)
+  currentGroup, _ := cmd.Flags().GetString(util.HandyCiFlagGroup)
 
-	for _, group := range workspace.Groups {
-		if currentGroup != "" {
-			if group.Name == currentGroup {
-				err := execInRepositories(cmd, args, executionParser, workspace, group)
+  for _, group := range workspace.Groups {
+    if currentGroup != "" {
+      if group.Name == currentGroup {
+        err := execInRepositories(cmd, args, executionParser, workspace, group)
 
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			err := execInRepositories(cmd, args, executionParser, workspace, group)
+        if err != nil {
+          return err
+        }
+      }
+    } else {
+      err := execInRepositories(cmd, args, executionParser, workspace, group)
 
-			if err != nil {
-				return err
-			}
-		}
-	}
+      if err != nil {
+        return err
+      }
+    }
+  }
 
-	return nil
+  return nil
 }
 
 func execInRepositories(
-	cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
-	targetRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagRepositories)
+  cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
+  targetRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagRepositories)
 
-	var targetRepositories []string
+  var targetRepositories []string
 
-	for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
-		targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
-	}
+  for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
+    targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
+  }
 
-	toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
-	fromRepository, _ := cmd.Flags().GetString(util.HandyCiFlagFrom)
+  toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
+  fromRepository, _ := cmd.Flags().GetString(util.HandyCiFlagFrom)
 
-	skippedRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagSkip)
+  skippedRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagSkip)
 
-	var skippedRepositories []string
+  var skippedRepositories []string
 
-	for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
-		skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
-	}
+  for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
+    skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
+  }
 
-	var resume bool
+  dryRun, _ := cmd.Flags().GetBool(util.HandyCiFlagDryRun)
 
-	for _, repository := range group.Repositories {
-		if !resume && fromRepository != "" {
-			if strings.EqualFold(repository.Name, fromRepository) {
-				resume = true
-			} else {
-				continue
-			}
-		}
+  var resume bool
 
-		if util.ContainArgs(skippedRepositories, repository.Name) {
-			continue
-		}
+  for _, repository := range group.Repositories {
+    if !resume && fromRepository != "" {
+      if strings.EqualFold(repository.Name, fromRepository) {
+        resume = true
+      } else {
+        continue
+      }
+    }
 
-		if targetRepositoriesInString != "" {
-			if util.ContainArgs(targetRepositories, repository.Name) {
-				i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
+    if util.ContainArgs(skippedRepositories, repository.Name) {
+      continue
+    }
 
-				if err != nil && !toBeContinue {
-					return err
-				}
+    if targetRepositoriesInString != "" {
+      if util.ContainArgs(targetRepositories, repository.Name) {
+        i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
 
-				if i > 0 {
-					util.Println()
-				}
-			}
-		} else {
-			i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue)
+        if err != nil && !toBeContinue {
+          return err
+        }
 
-			if err != nil && !toBeContinue {
-				return err
-			}
+        if i > 0 {
+          util.Println()
+        }
+      }
+    } else {
+      i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
 
-			if i > 0 {
-				util.Println()
-			}
-		}
-	}
+      if err != nil && !toBeContinue {
+        return err
+      }
 
-	return nil
+      if i > 0 {
+        util.Println()
+      }
+    }
+  }
+
+  return nil
 }
 
 func execInRepository(
-	cmd *cobra.Command, args []string, executionParser Parser,
-	workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool) (int, error) {
-	executions, err := executionParser.Parse(cmd, args, workspace, group, repository)
+  cmd *cobra.Command, args []string, executionParser Parser,
+  workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool, dryRun bool) (int, error) {
+  executions, err := executionParser.Parse(cmd, args, workspace, group, repository)
 
-	for i, execution := range executions {
-		if err != nil && !toBeContinue {
-			util.Printf("%v\n", err.Error())
-			return i, err
-		}
+  for i, execution := range executions {
+    if err != nil && !toBeContinue {
+      util.Printf("%v\n", err.Error())
+      return i, err
+    }
 
-		util.Printf("PATH: %s\n", execution.Path)
-		util.Printf("CMD: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
+    util.Printf("CMD: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
+    util.Printf("PATH: %s\n", execution.Path)
 
-		util.Printf("%s\n", ">>>>>>")
+    if dryRun {
+      continue
+    }
 
-		if execution.Skip {
-			continue
-		}
+    if execution.Skip {
+      continue
+    }
 
-		cmd := exec.Command(execution.Command, execution.Args...)
-		cmd.Dir = execution.Path
+    util.Printf("%s\n", ">>>>>>")
 
-		var stdoutBuf, stderrBuf bytes.Buffer
-		stdoutIn, _ := cmd.StdoutPipe()
-		stderrIn, _ := cmd.StderrPipe()
+    cmd := exec.Command(execution.Command, execution.Args...)
+    cmd.Dir = execution.Path
 
-		handyOut := NewWriter()
-		handyErr := NewWriter()
+    var stdoutBuf, stderrBuf bytes.Buffer
+    stdoutIn, _ := cmd.StdoutPipe()
+    stderrIn, _ := cmd.StderrPipe()
 
-		var errStdout, errStderr error
-		stdout := io.MultiWriter(handyOut, &stdoutBuf)
-		stderr := io.MultiWriter(handyErr, &stderrBuf)
-		err := cmd.Start()
+    handyOut := NewWriter()
+    handyErr := NewWriter()
 
-		fmt.Print(aurora.Green("[Handy CI]"), " ")
+    var errStdout, errStderr error
+    stdout := io.MultiWriter(handyOut, &stdoutBuf)
+    stderr := io.MultiWriter(handyErr, &stderrBuf)
+    err := cmd.Start()
 
-		if err != nil && !toBeContinue {
-			fmt.Printf("%v\n", err)
-			util.Printf("%s\n", "<<<<<<")
-			return i, err
-		}
+    fmt.Print(aurora.Green("[Handy CI]"), " ")
 
-		var wg sync.WaitGroup
-		wg.Add(1)
+    if err != nil && !toBeContinue {
+      fmt.Printf("%v\n", err)
+      util.Printf("%s\n", "<<<<<<")
+      return i, err
+    }
 
-		var count int64
-		var stdCount int64
+    var wg sync.WaitGroup
+    wg.Add(1)
 
-		go func() {
-			stdCount, errStdout = io.Copy(stdout, stdoutIn)
-			count += stdCount
+    var count int64
+    var stdCount int64
 
-			wg.Done()
-		}()
+    go func() {
+      stdCount, errStdout = io.Copy(stdout, stdoutIn)
+      count += stdCount
 
-		stdCount, errStderr = io.Copy(stderr, stderrIn)
-		count += stdCount
-		wg.Wait()
+      wg.Done()
+    }()
 
-		err = cmd.Wait()
-		if err != nil && !toBeContinue {
-			fmt.Printf("%v\n", err)
-			util.Printf("%s\n", "<<<<<<")
-			return i, err
-		}
+    stdCount, errStderr = io.Copy(stderr, stderrIn)
+    count += stdCount
+    wg.Wait()
 
-		if (errStdout != nil || errStderr != nil) && !toBeContinue {
-			fmt.Printf("Failed to capture stdout or stderr, %v, %v\n", errStdout, errStderr)
-			util.Printf("%s\n", "<<<<<<")
-			return i, err
-		}
+    err = cmd.Wait()
+    if err != nil && !toBeContinue {
+      fmt.Printf("%v\n", err)
+      util.Printf("%s\n", "<<<<<<")
+      return i, err
+    }
 
-		fmt.Printf("%s\n", "<<<<<<")
+    if (errStdout != nil || errStderr != nil) && !toBeContinue {
+      fmt.Printf("Failed to capture stdout or stderr, %v, %v\n", errStdout, errStderr)
+      util.Printf("%s\n", "<<<<<<")
+      return i, err
+    }
 
-		if i < len(executions)-1 {
-			fmt.Println()
-		}
-	}
+    fmt.Printf("%s\n", "<<<<<<")
 
-	return len(executions), nil
+    if i < len(executions)-1 {
+      fmt.Println()
+    }
+  }
+
+  return len(executions), nil
 }
 
 func Workspaces() []config.Workspace {
-	return config.HandyCiConfig.Workspaces
-}
-
-func Groups(workspaceName string) []config.Group {
-	var groups []config.Group
-
-	for _, workspace := range config.HandyCiConfig.Workspaces {
-		if workspace.Name == workspaceName {
-			groups = workspace.Groups
-		}
-	}
-
-	return groups
+  return config.HandyCiConfig.Workspaces
 }
 
 func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
-	var cleanedArgs []string
+  var cleanedArgs []string
 
-	for i := 0; i < len(args); i++ {
-		if (args[i] == "--"+util.HandyCiFlagWorkspace || args[i] == "-"+util.HandyCiFlagWorkspaceShorthand) &&
-			len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagWorkspace, args[i+1])
+  for i := 0; i < len(args); i++ {
+    if (args[i] == "--"+util.HandyCiFlagWorkspace || args[i] == "-"+util.HandyCiFlagWorkspaceShorthand) &&
+      len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagWorkspace, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if (args[i] == "--"+util.HandyCiFlagGroup || args[i] == "-"+util.HandyCiFlagGroupShorthand) &&
-			len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagGroup, args[i+1])
+    if (args[i] == "--"+util.HandyCiFlagGroup || args[i] == "-"+util.HandyCiFlagGroupShorthand) &&
+      len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagGroup, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if (args[i] == "--"+util.HandyCiFlagRepositories || args[i] == "-"+util.HandyCiFlagRepositoriesShorthand) &&
-			len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagRepositories, args[i+1])
+    if (args[i] == "--"+util.HandyCiFlagRepositories || args[i] == "-"+util.HandyCiFlagRepositoriesShorthand) &&
+      len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagRepositories, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if args[i] == "--"+util.HandyCiFlagContinue || args[i] == "-"+util.HandyCiFlagContinueShorthand {
-			flags.Set(util.HandyCiFlagContinue, "true")
+    if args[i] == "--"+util.HandyCiFlagContinue || args[i] == "-"+util.HandyCiFlagContinueShorthand {
+      flags.Set(util.HandyCiFlagContinue, "true")
 
-			continue
-		}
+      continue
+    }
 
-		if (args[i] == "--"+util.HandyCiFlagFrom || args[i] == "-"+util.HandyCiFlagFromShorthand) &&
-			len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagFrom, args[i+1])
+    if (args[i] == "--"+util.HandyCiFlagFrom || args[i] == "-"+util.HandyCiFlagFromShorthand) &&
+      len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagFrom, args[i+1])
 
-			i++
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if args[i] == "--"+util.HandyCiFlagSkip && len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagSkip, args[i+1])
+    if args[i] == "--"+util.HandyCiFlagDryRun {
+      flags.Set(util.HandyCiFlagDryRun, "true")
 
-			i++
+      continue
+    }
 
-			continue
-		}
+    if args[i] == "--"+util.HandyCiFlagSkip && len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagSkip, args[i+1])
 
-		if args[i] == "--"+util.HandyCiFlagConfig && len(args) >= i+1 {
-			flags.Set(util.HandyCiFlagConfig, args[i+1])
+      i++
 
-			i++
+      continue
+    }
 
-			continue
-		}
+    if args[i] == "--"+util.HandyCiFlagConfig && len(args) >= i+1 {
+      flags.Set(util.HandyCiFlagConfig, args[i+1])
 
-		if args[i] == "--"+util.HandyCiFlagHelp {
-			flags.Set(util.HandyCiFlagHelp, "true")
+      i++
 
-			continue
-		}
+      continue
+    }
 
-		if (args[i] == "--"+util.HandyCiNpmFlagPackage) && len(args) >= i+1 {
-			flags.Set(util.HandyCiNpmFlagPackage, args[i+1])
+    if args[i] == "--"+util.HandyCiFlagHelp {
+      flags.Set(util.HandyCiFlagHelp, "true")
 
-			i++
+      continue
+    }
 
-			continue
-		}
+    if args[i] == "--"+util.HandyCiExecFlagNonStrict {
+      flags.Set(util.HandyCiExecFlagNonStrict, "true")
 
-		cleanedArgs = append(cleanedArgs, args[i])
-	}
+      continue
+    }
 
-	return cleanedArgs
+    cleanedArgs = append(cleanedArgs, args[i])
+  }
+
+  return cleanedArgs
 }
 
 type executionWriter struct {
 }
 
 func NewWriter() io.Writer {
-	return executionWriter{}
+  return executionWriter{}
 }
 
 func (e executionWriter) Write(p []byte) (int, error) {
-	output := fmt.Sprintf("%s", p)
+  output := fmt.Sprintf("%s", p)
 
-	if strings.Contains(output, "\n") {
-		outputArgs := strings.Split(output, "\n")
+  if strings.Contains(output, "\n") {
+    outputArgs := strings.Split(output, "\n")
 
-		var realOutputArgs []interface{}
+    var realOutputArgs []interface{}
 
-		for i, outputArg := range outputArgs {
-			realOutputArgs = append(realOutputArgs, outputArg)
+    for i, outputArg := range outputArgs {
+      realOutputArgs = append(realOutputArgs, outputArg)
 
-			if i != len(outputArgs)-1 {
-				realOutputArgs = append(realOutputArgs, "\n", aurora.Green("[Handy CI]"), " ")
-			}
-		}
+      if i != len(outputArgs)-1 {
+        realOutputArgs = append(realOutputArgs, "\n", aurora.Green("[Handy CI]"), " ")
+      }
+    }
 
-		fmt.Print(realOutputArgs...)
-	} else {
-		fmt.Print(output)
-	}
+    fmt.Print(realOutputArgs...)
+  } else {
+    fmt.Print(output)
+  }
 
-	return len(p), nil
+  return len(p), nil
 }

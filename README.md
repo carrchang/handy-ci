@@ -14,8 +14,9 @@ Handy CI is a tool for managing and building multi-repository source code on dev
       * Remote
         * Name
         * URL
-      * Npm
-        * Path
+      * Cmd
+        * Name
+        * Paths
 
 ### Usage
 
@@ -30,8 +31,6 @@ Usage:
 Commands:
   exec        Execute any command
   git         Execute Git command
-  mvn         Execute Apache Maven command
-  npm         Execute npm command
 
 Options:
   -W, --workspace string    Execute command in workspace
@@ -90,9 +89,11 @@ workspaces:
       remotes:
       - name: origin
         url: git@gitlab.com:keepnative/soupe.git
-      npms:
-      - path: soupe-ida/soupe-ida-ui/src/main/node
-      - path: soupe-modern-ui/src/main/node
+      cmds:
+      - name: npm
+        paths:
+        - soupe-ida/soupe-ida-ui/src/main/node
+        - soupe-modern-ui/src/main/node
   - name: spring-cloud
     repositories:
     - name: deployer-kubernetes
@@ -139,19 +140,19 @@ handy-ci git fetch --all -G spring-cloud
 #### `-G` option also can be ignore if repository `deployer-kubernetes` is unique in all workspaces
 
 ```
-handy-ci mvn clean install -R deployer-kubernetes 
+handy-ci exec mvn clean install -R deployer-kubernetes 
 ```
 
 #### Use `-C` option can skip previous execution error and continue to next execution
 
 ```
-handy-ci npm outdated -C
+handy-ci exec npm outdated -C
 ```
 
 #### Use `--skip` option can skip execution in repository `deployer-kubernetes`
 
 ```
-handy-ci mvn clean install -G spring-cloud --skip deployer-kubernetes
+handy-ci exec mvn clean install -G spring-cloud --skip deployer-kubernetes
 ```
 
 ### Build and Install the Binaries from Source

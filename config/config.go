@@ -20,13 +20,15 @@ type Workspace struct {
 
 type Group struct {
   Name         string       `yaml:"name"`
+  PathIgnored  bool         `yaml:"pathIgnored"`
   Repositories []Repository `yaml:"repositories"`
 }
 
 type Repository struct {
-  Name    string      `yaml:"name"`
-  Remotes []GitRemote `yaml:"remotes"`
-  Npms    []Npm       `yaml:"npms"`
+  Name        string      `yaml:"name"`
+  PathIgnored bool        `yaml:"pathIgnored"`
+  Remotes     []GitRemote `yaml:"remotes"`
+  Cmds        []Cmd       `yaml:"cmds"`
 }
 
 type GitRemote struct {
@@ -34,9 +36,9 @@ type GitRemote struct {
   URL  string `yaml:"url"`
 }
 
-type Npm struct {
-  Name string `yaml:"name"`
-  Path string `yaml:"path"`
+type Cmd struct {
+  Name  string   `yaml:"name"`
+  Paths []string `yaml:"paths"`
 }
 
 func Initialize() {

@@ -38,15 +38,23 @@ func GroupPath(workspace config.Workspace, group config.Group) string {
 
   rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
 
+  if group.PathIgnored {
+    return rootPath
+  }
+
   return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, group.Name)
 }
 
 func RepositoryPath(workspace config.Workspace, group config.Group, repository config.Repository) string {
-  rootPath := GroupPath(workspace, group)
+  groupPath := GroupPath(workspace, group)
 
-  rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
+  groupPath = strings.TrimSuffix(groupPath, string(os.PathSeparator))
 
-  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, repository.Name)
+  if repository.PathIgnored {
+    return groupPath
+  }
+
+  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", groupPath, repository.Name)
 }
 
 func RepositoryRemoteURL(repository config.Repository, remoteName string) string {
