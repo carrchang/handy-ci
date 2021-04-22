@@ -84,69 +84,69 @@ Use "handy-ci COMMAND --help" for more information about a command.
 
 ```
 scriptDefinitions:
-- name: mvn
-  defaultArgs: clean install -nsu
-- name: npm
-  defaultArgs: outdated
+  - name: mvn
+    defaultArgs: clean install -nsu
+  - name: npm
+    defaultArgs: outdated
 workspaces:
-- name: home
-  root: /Users
-  groups:
-  - name: carrchang
-    repositories:
-    - name: .handy-ci
-      remotes:
-      - name: origin
-      - url: git@github.com:carrchang/handy-ci-config.git
-- name: carrchang-go
-  root: /coding/go/src/github.com
-  groups:
-  - name: carrchang
-    repositories:
-    - name: handy-ci
-      remotes:
-      - name: origin
-      - url: git@github.com:carrchang/handy-ci.git
-- name: keepnative
-  root: /coding/keepnative
-  groups:
-  - name: next
-    repositories:
-    - name: java
-      remotes:
-      - name: origin
-        url: git@gitlab.com:keepnative/java.git
-    - name: soupe-ui-components
-      remotes:
-      - name: origin
-        url: git@gitlab.com:keepnative/soupe-ui-components.git
-      npms:
-      - path:
-    - name: soupe
-      remotes:
-      - name: origin
-        url: git@gitlab.com:keepnative/soupe.git
-      scripts:
-      - name: mvn
-        default: true
-      - name: npm
-        paths:
-        - soupe-ida/soupe-ida-ui/src/main/node
-        - soupe-modern-ui/src/main/node
-  - name: spring-cloud
-    repositories:
-    - name: deployer-kubernetes
-      remotes:
-        - name: origin
-          url: git@gitlab.com:keepnative/spring-cloud/deployer-kubernetes.git
-        - name: spring-cloud
-          url: git@github.com:spring-cloud/spring-cloud-deployer-kubernetes.git
-    - name: data-flow
-      remotes:
-        - name: origin
-          url: git@gitlab.com:keepnative/spring-cloud/data-flow.git
-        - name: spring-cloud
-          url: git@github.com:spring-cloud/spring-cloud-dataflow.git    
+  - name: home
+    root: /Users
+    groups:
+      - name: carrchang
+        repositories:
+          - name: .handy-ci
+            remotes:
+              - name: origin
+              - url: git@github.com:carrchang/handy-ci-config.git
+  - name: carrchang-go
+    root: /coding/go/src/github.com
+    groups:
+      - name: carrchang
+        repositories:
+          - name: handy-ci
+            remotes:
+              - name: origin
+              - url: git@github.com:carrchang/handy-ci.git
+  - name: keepnative
+    root: /coding/keepnative
+    groups:
+      - name: next
+        repositories:
+          - name: java
+            remotes:
+              - name: origin
+                url: git@gitlab.com:keepnative/java.git
+          - name: soupe-ui-components
+            remotes:
+              - name: origin
+                url: git@gitlab.com:keepnative/soupe-ui-components.git
+            npms:
+              - path:
+          - name: soupe
+            remotes:
+              - name: origin
+                url: git@gitlab.com:keepnative/soupe.git
+            scripts:
+              - name: mvn
+                default: true
+              - name: npm
+                paths:
+                  - soupe-ida/soupe-ida-ui/src/main/node
+                  - soupe-modern-ui/src/main/node
+      - name: spring-cloud
+        repositories:
+          - name: deployer-kubernetes
+            remotes:
+              - name: origin
+                url: git@gitlab.com:keepnative/spring-cloud/deployer-kubernetes.git
+              - name: spring-cloud
+                url: git@github.com:spring-cloud/spring-cloud-deployer-kubernetes.git
+          - name: data-flow
+            remotes:
+              - name: origin
+                url: git@gitlab.com:keepnative/spring-cloud/data-flow.git
+              - name: spring-cloud
+                url: git@github.com:spring-cloud/spring-cloud-dataflow.git    
 ```
 
 ### Examples
