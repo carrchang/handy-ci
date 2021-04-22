@@ -9,26 +9,34 @@ import (
 var HandyCiConfig *Config
 
 type Config struct {
-  Workspaces []Workspace `yaml:"workspaces"`
+  ScriptDefinitions []ScriptDefinition `yaml:"scriptDefinitions"`
+  Workspaces        []Workspace        `yaml:"workspaces"`
+}
+
+type ScriptDefinition struct {
+  Name        string `yaml:"name"`
+  DefaultArgs string `yaml:"defaultArgs"`
 }
 
 type Workspace struct {
   Name   string  `yaml:"name"`
-  Root   string  `yaml:"root"`
+  Path   string  `yaml:"path"`
   Groups []Group `yaml:"groups"`
 }
 
 type Group struct {
-  Name         string       `yaml:"name"`
-  PathIgnored  bool         `yaml:"pathIgnored"`
-  Repositories []Repository `yaml:"repositories"`
+  Name              string       `yaml:"name"`
+  NameIgnoredInPath bool         `yaml:"nameIgnoredInPath"`
+  Path              string       `yaml:"path"`
+  Repositories      []Repository `yaml:"repositories"`
 }
 
 type Repository struct {
-  Name        string      `yaml:"name"`
-  PathIgnored bool        `yaml:"pathIgnored"`
-  Remotes     []GitRemote `yaml:"remotes"`
-  Cmds        []Cmd       `yaml:"cmds"`
+  Name              string      `yaml:"name"`
+  NameIgnoredInPath bool        `yaml:"nameIgnoredInPath"`
+  Path              string      `yaml:"path"`
+  Remotes           []GitRemote `yaml:"remotes"`
+  Scripts           []Script    `yaml:"scripts"`
 }
 
 type GitRemote struct {
@@ -36,9 +44,10 @@ type GitRemote struct {
   URL  string `yaml:"url"`
 }
 
-type Cmd struct {
-  Name  string   `yaml:"name"`
-  Paths []string `yaml:"paths"`
+type Script struct {
+  Name    string   `yaml:"name"`
+  Default bool     `yaml:"default"`
+  Paths   []string `yaml:"paths"`
 }
 
 func Initialize() {

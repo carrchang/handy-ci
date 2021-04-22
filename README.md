@@ -4,19 +4,51 @@ Handy CI is a tool for managing and building multi-repository source code on dev
 
 ### Configuration Concepts
 
-* Workspace
-  * Name
-  * Root Path
-  * Source Group
-    * Name
-    * Repository
-      * Name
-      * Remote
-        * Name
-        * URL
-      * Cmd
-        * Name
-        * Paths
+```go
+package config
+
+type Config struct {
+  ScriptDefinitions []ScriptDefinition `yaml:"scriptDefinitions"`
+  Workspaces        []Workspace        `yaml:"workspaces"`
+}
+
+type ScriptDefinition struct {
+  Name        string `yaml:"name"`
+  DefaultArgs string `yaml:"defaultArgs"`
+}
+
+type Workspace struct {
+  Name   string  `yaml:"name"`
+  Path   string  `yaml:"path"`
+  Groups []Group `yaml:"groups"`
+}
+
+type Group struct {
+  Name              string       `yaml:"name"`
+  NameIgnoredInPath bool         `yaml:"nameIgnoredInPath"`
+  Path              string       `yaml:"path"`
+  Repositories      []Repository `yaml:"repositories"`
+}
+
+type Repository struct {
+  Name              string      `yaml:"name"`
+  NameIgnoredInPath bool        `yaml:"nameIgnoredInPath"`
+  Path              string      `yaml:"path"`
+  Remotes           []GitRemote `yaml:"remotes"`
+  Scripts           []Script    `yaml:"scripts"`
+}
+
+type GitRemote struct {
+  Name string `yaml:"name"`
+  URL  string `yaml:"url"`
+}
+
+type Script struct {
+  Name    string   `yaml:"name"`
+  Default bool     `yaml:"default"`
+  Paths   []string `yaml:"paths"`
+}
+```
 
 ### Usage
 
@@ -51,6 +83,11 @@ Use "handy-ci COMMAND --help" for more information about a command.
 ### Example Configuration
 
 ```
+scriptDefinitions:
+- name: mvn
+  defaultArgs: clean install -nsu
+- name: npm
+  defaultArgs: outdated
 workspaces:
 - name: home
   root: /Users
@@ -89,7 +126,9 @@ workspaces:
       remotes:
       - name: origin
         url: git@gitlab.com:keepnative/soupe.git
-      cmds:
+      scripts:
+      - name: mvn
+        default: true
       - name: npm
         paths:
         - soupe-ida/soupe-ida-ui/src/main/node
@@ -112,7 +151,6 @@ workspaces:
 
 ### Examples
 
-
 #### Get git repository status in all workspace
 
 ```
@@ -125,19 +163,19 @@ handy-ci git status
 handy-ci git status -W keepnative
 ```
 
-#### Fetch fetch all changes from remote git repository in group `spring-cloud`
+#### Fetch all changes from remote git repository in group `spring-cloud`
 
 ```
 handy-ci git fetch --all -W keepnative -G spring-cloud
 ```
 
-#### `-W` option can be ignoreg if group `spring-cloud` is unique in all workspaces
+#### `-W` option not needed if group `spring-cloud` is unique in all workspaces
 
 ```
 handy-ci git fetch --all -G spring-cloud
 ```
 
-#### `-G` option also can be ignore if repository `deployer-kubernetes` is unique in all workspaces
+#### `-G` option also  not needed if repository `deployer-kubernetes` is unique in all workspaces
 
 ```
 handy-ci exec mvn clean install -R deployer-kubernetes 
@@ -153,6 +191,12 @@ handy-ci exec npm outdated -C
 
 ```
 handy-ci exec mvn clean install -G spring-cloud --skip deployer-kubernetes
+```
+
+#### Execute default script, first script will be executed when default not specified
+
+```
+handy-ci exec
 ```
 
 ### Build and Install the Binaries from Source

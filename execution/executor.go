@@ -16,43 +16,43 @@ import (
   "github.com/carrchang/handy-ci/util"
 )
 
-func Execute(cmd *cobra.Command, args []string, executionParser Parser) {
+func Execute(command *cobra.Command, args []string, executionParser Parser) {
   var err error
 
-  args = ParseFlagsAndArgs(cmd.Flags(), args)
+  args = ParseFlagsAndArgs(command.Flags(), args)
 
-  err = executionParser.CheckArgs(cmd, args)
+  err = executionParser.CheckArgs(command, args)
 
   if err != nil {
     util.Printf("Error:\n  %v\n", err)
-    cmd.Help()
+    command.Help()
     return
   }
 
-  help, _ := cmd.Flags().GetBool("help")
+  help, _ := command.Flags().GetBool("help")
 
   if help {
-    cmd.Help()
+    command.Help()
     return
   }
 
-  execInWorkspaces(cmd, args, executionParser)
+  execInWorkspaces(command, args, executionParser)
 }
 
-func execInWorkspaces(cmd *cobra.Command, args []string, executionParser Parser) error {
-  currentWorkspace, _ := cmd.Flags().GetString(util.HandyCiFlagWorkspace)
+func execInWorkspaces(command *cobra.Command, args []string, executionParser Parser) error {
+  currentWorkspace, _ := command.Flags().GetString(util.HandyCiFlagWorkspace)
 
   for _, workspace := range Workspaces() {
     if currentWorkspace != "" {
       if workspace.Name == currentWorkspace {
-        err := execInGroups(cmd, args, executionParser, workspace)
+        err := execInGroups(command, args, executionParser, workspace)
 
         if err != nil {
           return err
         }
       }
     } else {
-      err := execInGroups(cmd, args, executionParser, workspace)
+      err := execInGroups(command, args, executionParser, workspace)
 
       if err != nil {
         return err
@@ -63,20 +63,20 @@ func execInWorkspaces(cmd *cobra.Command, args []string, executionParser Parser)
   return nil
 }
 
-func execInGroups(cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace) error {
-  currentGroup, _ := cmd.Flags().GetString(util.HandyCiFlagGroup)
+func execInGroups(command *cobra.Command, args []string, executionParser Parser, workspace config.Workspace) error {
+  currentGroup, _ := command.Flags().GetString(util.HandyCiFlagGroup)
 
   for _, group := range workspace.Groups {
     if currentGroup != "" {
       if group.Name == currentGroup {
-        err := execInRepositories(cmd, args, executionParser, workspace, group)
+        err := execInRepositories(command, args, executionParser, workspace, group)
 
         if err != nil {
           return err
         }
       }
     } else {
-      err := execInRepositories(cmd, args, executionParser, workspace, group)
+      err := execInRepositories(command, args, executionParser, workspace, group)
 
       if err != nil {
         return err
@@ -88,8 +88,8 @@ func execInGroups(cmd *cobra.Command, args []string, executionParser Parser, wor
 }
 
 func execInRepositories(
-  cmd *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
-  targetRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagRepositories)
+  command *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
+  targetRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagRepositories)
 
   var targetRepositories []string
 
@@ -97,10 +97,10 @@ func execInRepositories(
     targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
   }
 
-  toBeContinue, _ := cmd.Flags().GetBool(util.HandyCiFlagContinue)
-  fromRepository, _ := cmd.Flags().GetString(util.HandyCiFlagFrom)
+  toBeContinue, _ := command.Flags().GetBool(util.HandyCiFlagContinue)
+  fromRepository, _ := command.Flags().GetString(util.HandyCiFlagFrom)
 
-  skippedRepositoriesInString, _ := cmd.Flags().GetString(util.HandyCiFlagSkip)
+  skippedRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagSkip)
 
   var skippedRepositories []string
 
@@ -108,7 +108,7 @@ func execInRepositories(
     skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
   }
 
-  dryRun, _ := cmd.Flags().GetBool(util.HandyCiFlagDryRun)
+  dryRun, _ := command.Flags().GetBool(util.HandyCiFlagDryRun)
 
   var resume bool
 
@@ -127,7 +127,7 @@ func execInRepositories(
 
     if targetRepositoriesInString != "" {
       if util.ContainArgs(targetRepositories, repository.Name) {
-        i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
+        i, err := execInRepository(command, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
 
         if err != nil && !toBeContinue {
           return err
@@ -138,7 +138,7 @@ func execInRepositories(
         }
       }
     } else {
-      i, err := execInRepository(cmd, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
+      i, err := execInRepository(command, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
 
       if err != nil && !toBeContinue {
         return err
@@ -154,9 +154,9 @@ func execInRepositories(
 }
 
 func execInRepository(
-  cmd *cobra.Command, args []string, executionParser Parser,
+  command *cobra.Command, args []string, executionParser Parser,
   workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool, dryRun bool) (int, error) {
-  executions, err := executionParser.Parse(cmd, args, workspace, group, repository)
+  executions, err := executionParser.Parse(command, args, workspace, group, repository)
 
   for i, execution := range executions {
     if err != nil && !toBeContinue {
@@ -164,7 +164,7 @@ func execInRepository(
       return i, err
     }
 
-    util.Printf("CMD: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
+    util.Printf("SCRIPT: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
     util.Printf("PATH: %s\n", execution.Path)
 
     if dryRun {
@@ -177,12 +177,12 @@ func execInRepository(
 
     util.Printf("%s\n", ">>>>>>")
 
-    cmd := exec.Command(execution.Command, execution.Args...)
-    cmd.Dir = execution.Path
+    executionCommand := exec.Command(execution.Command, execution.Args...)
+    executionCommand.Dir = execution.Path
 
     var stdoutBuf, stderrBuf bytes.Buffer
-    stdoutIn, _ := cmd.StdoutPipe()
-    stderrIn, _ := cmd.StderrPipe()
+    stdoutIn, _ := executionCommand.StdoutPipe()
+    stderrIn, _ := executionCommand.StderrPipe()
 
     handyOut := NewWriter()
     handyErr := NewWriter()
@@ -190,7 +190,7 @@ func execInRepository(
     var errStdout, errStderr error
     stdout := io.MultiWriter(handyOut, &stdoutBuf)
     stderr := io.MultiWriter(handyErr, &stderrBuf)
-    err := cmd.Start()
+    err := executionCommand.Start()
 
     fmt.Print(aurora.Green("[Handy CI]"), " ")
 
@@ -217,7 +217,7 @@ func execInRepository(
     count += stdCount
     wg.Wait()
 
-    err = cmd.Wait()
+    err = executionCommand.Wait()
     if err != nil && !toBeContinue {
       fmt.Printf("%v\n", err)
       util.Printf("%s\n", "<<<<<<")
@@ -238,6 +238,10 @@ func execInRepository(
   }
 
   return len(executions), nil
+}
+
+func ScriptDefinitions() []config.ScriptDefinition {
+  return config.HandyCiConfig.ScriptDefinitions
 }
 
 func Workspaces() []config.Workspace {

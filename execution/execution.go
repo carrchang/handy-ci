@@ -18,10 +18,10 @@ type Execution struct {
 }
 
 type Parser interface {
-  CheckArgs(cmd *cobra.Command, args []string) error
+  CheckArgs(command *cobra.Command, args []string) error
 
   Parse(
-    cmd *cobra.Command, args []string,
+    command *cobra.Command, args []string,
     workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error)
 }
 
@@ -34,15 +34,23 @@ func (e ParseError) Error() string {
 }
 
 func GroupPath(workspace config.Workspace, group config.Group) string {
-  rootPath := workspace.Root
+  workspacePath := workspace.Path
 
-  rootPath = strings.TrimSuffix(rootPath, string(os.PathSeparator))
+  workspacePath = strings.TrimSuffix(workspacePath, string(os.PathSeparator))
 
-  if group.PathIgnored {
-    return rootPath
+  if len(group.Path) > 0 {
+    if strings.HasPrefix(group.Path, string(os.PathSeparator)) {
+      return strings.TrimSuffix(group.Path, string(os.PathSeparator))
+    } else {
+      return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", workspacePath, group.Path)
+    }
   }
 
-  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", rootPath, group.Name)
+  if group.NameIgnoredInPath {
+    return workspacePath
+  } else {
+    return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", workspacePath, group.Name)
+  }
 }
 
 func RepositoryPath(workspace config.Workspace, group config.Group, repository config.Repository) string {
@@ -50,11 +58,19 @@ func RepositoryPath(workspace config.Workspace, group config.Group, repository c
 
   groupPath = strings.TrimSuffix(groupPath, string(os.PathSeparator))
 
-  if repository.PathIgnored {
-    return groupPath
+  if len(repository.Path) > 0 {
+    if strings.HasPrefix(repository.Path, string(os.PathSeparator)) {
+      return strings.TrimSuffix(repository.Path, string(os.PathSeparator))
+    } else {
+      return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", groupPath, repository.Path)
+    }
   }
 
-  return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", groupPath, repository.Name)
+  if repository.NameIgnoredInPath {
+    return groupPath
+  } else {
+    return fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", groupPath, repository.Name)
+  }
 }
 
 func RepositoryRemoteURL(repository config.Repository, remoteName string) string {

@@ -1,9 +1,9 @@
 package main
 
 import (
-  "github.com/carrchang/handy-ci/cmd"
+  "github.com/carrchang/handy-ci/command"
 )
 
 func main() {
-  cmd.Execute()
+  command.Execute()
 }

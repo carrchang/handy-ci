@@ -1,98 +1,99 @@
 package execution
 
 import (
-	"os"
+  "os"
 
-	"github.com/spf13/cobra"
+  "github.com/spf13/cobra"
 
-	"github.com/carrchang/handy-ci/config"
-	"github.com/carrchang/handy-ci/util"
+  "github.com/carrchang/handy-ci/config"
+  "github.com/carrchang/handy-ci/util"
 )
 
 type GitExecution struct {
 }
 
-func (s GitExecution) CheckArgs(cmd *cobra.Command, args []string) error {
-	return nil
+func (s GitExecution) CheckArgs(command *cobra.Command, args []string) error {
+  return nil
 }
 
 func (s GitExecution) Parse(
-	cmd *cobra.Command, args []string,
-	workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
-	var path string
-	var err error
+  command *cobra.Command, args []string,
+  workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
+  var path string
+  var err error
 
-	path = RepositoryPath(workspace, group, repository)
+  path = RepositoryPath(workspace, group, repository)
 
-	if util.ContainArgs(args, "clone") {
-		_, err = os.Stat(path)
+  if util.ContainArgs(args, "clone") {
+    _, err = os.Stat(path)
 
-		if os.IsNotExist(err) {
-			err = nil
-		}
+    if os.IsNotExist(err) {
+      err = nil
+    }
 
-		path = GroupPath(workspace, group)
-		args = append(args, RepositoryRemoteURL(repository, "origin"))
-		args = append(args, repository.Name)
+    args = append(args, RepositoryRemoteURL(repository, "origin"))
+    args = append(args, repository.Name)
 
-		_, err2 := os.Stat(path)
-		if os.IsNotExist(err2) {
-			os.MkdirAll(path, 0755)
-		}
-	}
+    path = GroupPath(workspace, group)
 
-	if util.ContainArgs(args, "remote") && util.ContainArgs(args, "check") {
-		args = []string{}
-		args = append(args, "remote")
+    _, err2 := os.Stat(path)
+    if os.IsNotExist(err2) {
+      os.MkdirAll(path, 0755)
+    }
+  }
 
-		var executions []Execution
-		var remote config.GitRemote
-		var executionArgs []string
+  if util.ContainArgs(args, "remote") && util.ContainArgs(args, "check") {
+    args = []string{}
+    args = append(args, "remote")
 
-		for _, remote = range repository.Remotes {
-			if remote.Name == "origin" {
-				executionArgs = args
-				executionArgs = append(executionArgs, "set-url")
-				executionArgs = append(executionArgs, remote.Name)
-				executionArgs = append(executionArgs, remote.URL)
+    var executions []Execution
+    var remote config.GitRemote
+    var executionArgs []string
 
-				executions = append(executions, Execution{
-					Command: cmd.Use,
-					Path:    path,
-					Args:    executionArgs,
-				})
-			} else {
-				executionArgs = args
-				executionArgs = append(executionArgs, "remove")
-				executionArgs = append(executionArgs, remote.Name)
+    for _, remote = range repository.Remotes {
+      if remote.Name == "origin" {
+        executionArgs = args
+        executionArgs = append(executionArgs, "set-url")
+        executionArgs = append(executionArgs, remote.Name)
+        executionArgs = append(executionArgs, remote.URL)
 
-				executions = append(executions, Execution{
-					Command: cmd.Use,
-					Path:    path,
-					Args:    executionArgs,
-				})
+        executions = append(executions, Execution{
+          Command: command.Use,
+          Path:    path,
+          Args:    executionArgs,
+        })
+      } else {
+        executionArgs = args
+        executionArgs = append(executionArgs, "remove")
+        executionArgs = append(executionArgs, remote.Name)
 
-				executionArgs = args
-				executionArgs = append(executionArgs, "add")
-				executionArgs = append(executionArgs, remote.Name)
-				executionArgs = append(executionArgs, remote.URL)
+        executions = append(executions, Execution{
+          Command: command.Use,
+          Path:    path,
+          Args:    executionArgs,
+        })
 
-				executions = append(executions, Execution{
-					Command: cmd.Use,
-					Path:    path,
-					Args:    executionArgs,
-				})
-			}
-		}
+        executionArgs = args
+        executionArgs = append(executionArgs, "add")
+        executionArgs = append(executionArgs, remote.Name)
+        executionArgs = append(executionArgs, remote.URL)
 
-		return executions, nil
-	}
+        executions = append(executions, Execution{
+          Command: command.Use,
+          Path:    path,
+          Args:    executionArgs,
+        })
+      }
+    }
 
-	return []Execution{
-		{
-			Command: cmd.Use,
-			Path:    path,
-			Args:    args,
-		},
-	}, nil
+    return executions, nil
+  }
+
+  return []Execution{
+    {
+      Command: command.Use,
+      Path:    path,
+      Args:    args,
+    },
+  }, nil
 }
