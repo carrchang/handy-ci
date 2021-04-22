@@ -65,12 +65,14 @@ Commands:
   git         Execute Git command
 
 Options:
-  -W, --workspace string    Execute command in workspace
-  -G, --group string        Execute command in group
-  -R, --repository string   Execute command in repository
-  -C, --continue            Skip failed command and continue
-      --skip string         Skip execution in comma-delimited list of repositories
-      --config string       Config file (default is $HOME/.handy-ci/config.yaml)
+  -W, --workspace string      Execute command in workspace
+  -G, --group string          Execute command in group
+  -R, --repositories string   Execute command in comma-delimited list of repositories
+  -C, --continue              Skip failed command and continue
+      --dry-run               Only print the command and execution path
+      --skip string           Skip execution in comma-delimited list of repositories
+  -F, --from string           Execute command from repository to end
+      --config string         Config file (default is /Users/carrchang/.handy-ci/config.yaml)
 
 Options can be in front of, behind, or on both sides of the command.
 
