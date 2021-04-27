@@ -24,8 +24,7 @@ func Execute(command *cobra.Command, args []string, executionParser Parser) {
   err = executionParser.CheckArgs(command, args)
 
   if err != nil {
-    util.Printf("Error:\n  %v\n", err)
-    command.Help()
+    fmt.Printf("\n%v\n", err)
     return
   }
 
