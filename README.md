@@ -122,8 +122,8 @@ workspaces:
             remotes:
               - name: origin
                 url: git@gitlab.com:keepnative/soupe-ui-components.git
-            npms:
-              - path:
+            scripts:
+              - name: npm
           - name: soupe
             remotes:
               - name: origin
@@ -143,12 +143,16 @@ workspaces:
                 url: git@gitlab.com:keepnative/spring-cloud/deployer-kubernetes.git
               - name: spring-cloud
                 url: git@github.com:spring-cloud/spring-cloud-deployer-kubernetes.git
+            scripts:
+              - name: mvn
           - name: data-flow
             remotes:
               - name: origin
                 url: git@gitlab.com:keepnative/spring-cloud/data-flow.git
               - name: spring-cloud
-                url: git@github.com:spring-cloud/spring-cloud-dataflow.git    
+                url: git@github.com:spring-cloud/spring-cloud-dataflow.git
+            scripts:
+              - name: mvn
 ```
 
 ### Examples
