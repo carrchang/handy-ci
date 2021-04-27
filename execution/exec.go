@@ -14,6 +14,31 @@ type ExecExecution struct {
 }
 
 func (s ExecExecution) CheckArgs(command *cobra.Command, args []string) error {
+  if command.Use == "exec" {
+    nonStrict, _ := command.Flags().GetBool(util.HandyCiExecFlagNonStrict)
+
+    if !nonStrict {
+      var scriptName = args[0]
+      var defined = false
+
+      for _, scriptDefinition := range ScriptDefinitions() {
+        if scriptDefinition.Name == scriptName {
+          defined = true
+        }
+      }
+
+      if !defined {
+        var message = fmt.Sprintf(
+          "Script [%s] not defined, define in configuration or try to execute with --non-strict flag\n",
+          scriptName)
+
+        return ParseError{
+          message,
+        }
+      }
+    }
+  }
+
   return nil
 }
 
@@ -42,24 +67,6 @@ func (s ExecExecution) Parse(
 
     if len(repository.Scripts) > 0 {
       for _, script := range repository.Scripts {
-        if !nonStrict {
-          var scriptDefined bool
-
-          for _, scriptDefinition := range ScriptDefinitions() {
-            if scriptDefinition.Name == script.Name {
-              scriptDefined = true
-
-              break
-            }
-          }
-
-          if !scriptDefined {
-            util.Printf("Script %s not defined", script.Name)
-
-            return executions, nil
-          }
-        }
-
         if currentScript == script.Name {
           if len(script.Paths) > 0 {
             for _, path := range script.Paths {
