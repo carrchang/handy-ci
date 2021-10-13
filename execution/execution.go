@@ -3,6 +3,7 @@ package execution
 import (
   "fmt"
   "os"
+  "path/filepath"
   "strings"
 
   "github.com/spf13/cobra"
@@ -34,7 +35,15 @@ func (e ParseError) Error() string {
 }
 
 func GroupPath(workspace config.Workspace, group config.Group) string {
-  workspacePath := workspace.Path
+  workspacePath := filepath.FromSlash(workspace.Path)
+
+  workspacePath = strings.ReplaceAll(workspacePath, "$HANDY_CI_ROOT", os.Getenv("HANDY_CI_ROOT"))
+
+  homeDir, _ := os.UserHomeDir()
+
+  if homeDir != "" {
+    workspacePath = strings.ReplaceAll(workspacePath, "$HOME", homeDir)
+  }
 
   workspacePath = strings.TrimSuffix(workspacePath, string(os.PathSeparator))
 
