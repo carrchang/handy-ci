@@ -1,13 +1,13 @@
 package command
 
 import (
-  "os"
+	"os"
 
-  "github.com/spf13/cobra"
-  "github.com/spf13/viper"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
-  "github.com/carrchang/handy-ci/config"
-  "github.com/carrchang/handy-ci/util"
+	"github.com/carrchang/handy-ci/config"
+	"github.com/carrchang/handy-ci/util"
 )
 
 var cfgFile string
@@ -63,6 +63,8 @@ func Execute() {
 
 func init() {
   cobra.OnInitialize(initConfig)
+
+  rootCommand.CompletionOptions.DisableDefaultCmd = true
 
   rootCommand.SetUsageTemplate(usageTemplate)
   rootCommand.SetHelpTemplate(helpTemplate)
