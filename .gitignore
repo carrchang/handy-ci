@@ -76,3 +76,5 @@ _book
 # Go Module #
 #############
 vendor
+
+handy-ci
