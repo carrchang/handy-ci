@@ -1,16 +1,14 @@
 package execution
 
 import (
-  "bytes"
   "fmt"
-  "io"
-  "os/exec"
-  "strings"
-  "sync"
-
   "github.com/logrusorgru/aurora"
   "github.com/spf13/cobra"
   "github.com/spf13/pflag"
+  "io"
+  "os"
+  "os/exec"
+  "strings"
 
   "github.com/carrchang/handy-ci/config"
   "github.com/carrchang/handy-ci/util"
@@ -178,58 +176,18 @@ func execInRepository(
 
     executionCommand := exec.Command(execution.Command, execution.Args...)
     executionCommand.Dir = execution.Path
+    executionCommand.Stdin = os.Stdin
+    executionCommand.Stdout = os.Stdout
+    executionCommand.Stderr = os.Stderr
 
-    var stdoutBuf, stderrBuf bytes.Buffer
-    stdoutIn, _ := executionCommand.StdoutPipe()
-    stderrIn, _ := executionCommand.StderrPipe()
-
-    handyOut := NewWriter()
-    handyErr := NewWriter()
-
-    var errStdout, errStderr error
-    stdout := io.MultiWriter(handyOut, &stdoutBuf)
-    stderr := io.MultiWriter(handyErr, &stderrBuf)
-    err := executionCommand.Start()
-
-    fmt.Print(aurora.Green("[Handy CI]"), " ")
-
+    err := executionCommand.Run()
     if err != nil && !toBeContinue {
       fmt.Printf("%v\n", err)
       util.Printf("%s\n", "<<<<<<")
       return i, err
     }
 
-    var wg sync.WaitGroup
-    wg.Add(1)
-
-    var count int64
-    var stdCount int64
-
-    go func() {
-      stdCount, errStdout = io.Copy(stdout, stdoutIn)
-      count += stdCount
-
-      wg.Done()
-    }()
-
-    stdCount, errStderr = io.Copy(stderr, stderrIn)
-    count += stdCount
-    wg.Wait()
-
-    err = executionCommand.Wait()
-    if err != nil && !toBeContinue {
-      fmt.Printf("%v\n", err)
-      util.Printf("%s\n", "<<<<<<")
-      return i, err
-    }
-
-    if (errStdout != nil || errStderr != nil) && !toBeContinue {
-      fmt.Printf("Failed to capture stdout or stderr, %v, %v\n", errStdout, errStderr)
-      util.Printf("%s\n", "<<<<<<")
-      return i, err
-    }
-
-    fmt.Printf("%s\n", "<<<<<<")
+    util.Printf("%s\n", "<<<<<<")
 
     if i < len(executions)-1 {
       fmt.Println()
