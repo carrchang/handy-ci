@@ -1,7 +1,9 @@
 package execution
 
 import (
+  "fmt"
   "os"
+  "strings"
 
   "github.com/spf13/cobra"
 
@@ -35,6 +37,11 @@ func (s GitExecution) Parse(
     args = append(args, repository.Name)
 
     path = GroupPath(workspace, group)
+
+    if repository.Path != "" {
+      path = fmt.Sprintf("%s"+string(os.PathSeparator)+"%s", path, repository.Path)
+      path = strings.TrimSuffix(strings.TrimSuffix(path, repository.Name), string(os.PathSeparator))
+    }
 
     _, err2 := os.Stat(path)
     if os.IsNotExist(err2) {
