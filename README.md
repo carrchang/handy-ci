@@ -210,7 +210,7 @@ handy-ci exec
 #### Prerequisite Tools
 
 * [Git](https://git-scm.com/)
-* [Go (at least Go 1.18)](https://golang.org/dl/)
+* [Go (at least Go 1.21)](https://golang.org/dl/)
 
 #### Install from GitHub
 
