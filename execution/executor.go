@@ -1,323 +1,430 @@
 package execution
 
 import (
-  "fmt"
-  "github.com/logrusorgru/aurora"
-  "github.com/spf13/cobra"
-  "github.com/spf13/pflag"
-  "io"
-  "os"
-  "os/exec"
-  "strings"
+	"fmt"
+	"github.com/logrusorgru/aurora"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"io"
+	"os"
+	"os/exec"
+	"slices"
+	"strings"
 
-  "github.com/carrchang/handy-ci/config"
-  "github.com/carrchang/handy-ci/util"
+	"github.com/carrchang/handy-ci/config"
+	"github.com/carrchang/handy-ci/util"
 )
 
 func Execute(command *cobra.Command, args []string, executionParser Parser) {
-  var err error
+	var err error
 
-  args = ParseFlagsAndArgs(command.Flags(), args)
+	args, err = ParseFlagsAndArgs(command.Flags(), args)
 
-  err = executionParser.CheckArgs(command, args)
+	if err != nil {
+		fmt.Printf("\n%v\n\n", err)
+		return
+	}
 
-  if err != nil {
-    fmt.Printf("\n%v\n", err)
-    return
-  }
+	err = executionParser.CheckArgs(command, args)
 
-  help, _ := command.Flags().GetBool("help")
+	if err != nil {
+		fmt.Printf("\n%v\n\n", err)
+		return
+	}
 
-  if help {
-    command.Help()
-    return
-  }
+	help, _ := command.Flags().GetBool("help")
 
-  execInWorkspaces(command, args, executionParser)
+	if help {
+		command.Help()
+		return
+	}
+
+	execInWorkspaces(command, args, executionParser)
 }
 
 func execInWorkspaces(command *cobra.Command, args []string, executionParser Parser) error {
-  currentWorkspace, _ := command.Flags().GetString(util.HandyCiFlagWorkspace)
+	currentWorkspace, _ := command.Flags().GetString(util.HandyCiFlagWorkspace)
 
-  for _, workspace := range Workspaces() {
-    if currentWorkspace != "" {
-      if workspace.Name == currentWorkspace {
-        err := execInGroups(command, args, executionParser, workspace)
+	for _, workspace := range Workspaces() {
+		if currentWorkspace != "" {
+			if workspace.Name == currentWorkspace {
+				err := execInGroups(command, args, executionParser, workspace)
 
-        if err != nil {
-          return err
-        }
-      }
-    } else {
-      err := execInGroups(command, args, executionParser, workspace)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			err := execInGroups(command, args, executionParser, workspace)
 
-      if err != nil {
-        return err
-      }
-    }
-  }
+			if err != nil {
+				return err
+			}
+		}
+	}
 
-  return nil
+	return nil
 }
 
 func execInGroups(command *cobra.Command, args []string, executionParser Parser, workspace config.Workspace) error {
-  currentGroup, _ := command.Flags().GetString(util.HandyCiFlagGroup)
+	currentGroup, _ := command.Flags().GetString(util.HandyCiFlagGroup)
 
-  for _, group := range workspace.Groups {
-    if currentGroup != "" {
-      if group.Name == currentGroup {
-        err := execInRepositories(command, args, executionParser, workspace, group)
+	for _, group := range workspace.Groups {
+		if currentGroup != "" {
+			if group.Name == currentGroup {
+				err := execInRepositories(command, args, executionParser, workspace, group)
 
-        if err != nil {
-          return err
-        }
-      }
-    } else {
-      err := execInRepositories(command, args, executionParser, workspace, group)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			err := execInRepositories(command, args, executionParser, workspace, group)
 
-      if err != nil {
-        return err
-      }
-    }
-  }
+			if err != nil {
+				return err
+			}
+		}
+	}
 
-  return nil
+	return nil
 }
 
 func execInRepositories(
-  command *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
-  targetRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagRepositories)
+	command *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
+	var targetRepositories []string
+	targetRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagRepositories)
+	for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
+		targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
+	}
 
-  var targetRepositories []string
+	var tagsAsArgument []string
+	tagsAsArgumentInString, _ := command.Flags().GetString(util.HandyCiFlagTags)
+	for _, tagAsArgumentInString := range strings.Split(tagsAsArgumentInString, ",") {
+		tagsAsArgument = append(tagsAsArgument, strings.Trim(tagAsArgumentInString, " "))
+	}
 
-  for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
-    targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
-  }
+	toBeContinue, _ := command.Flags().GetBool(util.HandyCiFlagContinue)
+	fromRepository, _ := command.Flags().GetString(util.HandyCiFlagFrom)
 
-  toBeContinue, _ := command.Flags().GetBool(util.HandyCiFlagContinue)
-  fromRepository, _ := command.Flags().GetString(util.HandyCiFlagFrom)
+	var skippedRepositories []string
+	skippedRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagSkip)
+	for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
+		skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
+	}
 
-  skippedRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagSkip)
+	dryRun, _ := command.Flags().GetBool(util.HandyCiFlagDryRun)
 
-  var skippedRepositories []string
+	var resume bool
 
-  for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
-    skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
-  }
+	for _, repository := range group.Repositories {
+		if !resume && fromRepository != "" {
+			if strings.EqualFold(repository.Name, fromRepository) {
+				resume = true
+			} else {
+				continue
+			}
+		}
 
-  dryRun, _ := command.Flags().GetBool(util.HandyCiFlagDryRun)
+		if util.ContainArgs(skippedRepositories, repository.Name) {
+			continue
+		}
 
-  var resume bool
+		if !repositoryTagsContainAllTagsAsArgument(repository, tagsAsArgument) {
+			continue
+		}
 
-  for _, repository := range group.Repositories {
-    if !resume && fromRepository != "" {
-      if strings.EqualFold(repository.Name, fromRepository) {
-        resume = true
-      } else {
-        continue
-      }
-    }
+		if targetRepositoriesInString != "" {
+			if util.ContainArgs(targetRepositories, repository.Name) {
+				i, err := execInRepository(command, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
 
-    if util.ContainArgs(skippedRepositories, repository.Name) {
-      continue
-    }
+				if err != nil && !toBeContinue {
+					return err
+				}
 
-    if targetRepositoriesInString != "" {
-      if util.ContainArgs(targetRepositories, repository.Name) {
-        i, err := execInRepository(command, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
+				if i > 0 {
+					util.Println()
+				}
+			}
+		} else {
+			i, err := execInRepository(command, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
 
-        if err != nil && !toBeContinue {
-          return err
-        }
+			if err != nil && !toBeContinue {
+				return err
+			}
 
-        if i > 0 {
-          util.Println()
-        }
-      }
-    } else {
-      i, err := execInRepository(command, args, executionParser, workspace, group, repository, toBeContinue, dryRun)
+			if i > 0 {
+				util.Println()
+			}
+		}
+	}
 
-      if err != nil && !toBeContinue {
-        return err
-      }
+	return nil
+}
 
-      if i > 0 {
-        util.Println()
-      }
-    }
-  }
+func repositoryTagsContainAllTagsAsArgument(repository config.Repository, tagsAsArgument []string) bool {
+	for _, tagAsArgument := range tagsAsArgument {
+		if !slices.Contains(repository.Tags, tagAsArgument) {
+			return false
+		}
+	}
 
-  return nil
+	return true
 }
 
 func execInRepository(
-  command *cobra.Command, args []string, executionParser Parser,
-  workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool, dryRun bool) (int, error) {
-  executions, err := executionParser.Parse(command, args, workspace, group, repository)
+	command *cobra.Command, args []string, executionParser Parser,
+	workspace config.Workspace, group config.Group, repository config.Repository, toBeContinue bool, dryRun bool) (int, error) {
+	util.Printf("PATH: %s\n", repository.Name)
+	executions, err := executionParser.Parse(command, args, workspace, group, repository)
 
-  for i, execution := range executions {
-    if err != nil && !toBeContinue {
-      util.Printf("%v\n", err.Error())
-      return i, err
-    }
+	for i, execution := range executions {
+		if err != nil && !toBeContinue {
+			util.Printf("%v\n", err.Error())
+			return i, err
+		}
 
-    util.Printf("SCRIPT: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
-    util.Printf("PATH: %s\n", execution.Path)
+		util.Printf("SCRIPT: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
+		util.Printf("PATH: %s\n", execution.Path)
 
-    if dryRun {
-      continue
-    }
+		if dryRun {
+			continue
+		}
 
-    if execution.Skip {
-      continue
-    }
+		if execution.Skip {
+			continue
+		}
 
-    util.Printf("%s\n", ">>>>>>")
+		util.Printf("%s\n", ">>>>>>")
 
-    executionCommand := exec.Command(execution.Command, execution.Args...)
-    executionCommand.Dir = execution.Path
-    executionCommand.Stdin = os.Stdin
-    executionCommand.Stdout = os.Stdout
-    executionCommand.Stderr = os.Stderr
+		executionCommand := exec.Command(execution.Command, execution.Args...)
+		executionCommand.Dir = execution.Path
+		executionCommand.Stdin = os.Stdin
+		executionCommand.Stdout = os.Stdout
+		executionCommand.Stderr = os.Stderr
 
-    err := executionCommand.Run()
-    if err != nil && !toBeContinue {
-      fmt.Printf("%v\n", err)
-      util.Printf("%s\n", "<<<<<<")
-      return i, err
-    }
+		err := executionCommand.Run()
+		if err != nil && !toBeContinue {
+			fmt.Printf("%v\n", err)
+			util.Printf("%s\n", "<<<<<<")
+			return i, err
+		}
 
-    util.Printf("%s\n", "<<<<<<")
+		util.Printf("%s\n", "<<<<<<")
 
-    if i < len(executions)-1 {
-      fmt.Println()
-    }
-  }
+		if i < len(executions)-1 {
+			fmt.Println()
+		}
+	}
 
-  return len(executions), nil
+	return len(executions), nil
 }
 
 func ScriptDefinitions() []config.ScriptDefinition {
-  return config.HandyCiConfig.ScriptDefinitions
+	return config.HandyCiConfig.ScriptDefinitions
 }
 
 func Workspaces() []config.Workspace {
-  return config.HandyCiConfig.Workspaces
+	return config.HandyCiConfig.Workspaces
 }
 
-func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) []string {
-  var cleanedArgs []string
+func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
+	var cleanedArgs []string
 
-  for i := 0; i < len(args); i++ {
-    if (args[i] == "--"+util.HandyCiFlagWorkspace || args[i] == "-"+util.HandyCiFlagWorkspaceShorthand) &&
-      len(args) >= i+1 {
-      flags.Set(util.HandyCiFlagWorkspace, args[i+1])
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--"+util.HandyCiFlagWorkspace || args[i] == "-"+util.HandyCiFlagWorkspaceShorthand {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
 
-      i++
+			if err != nil {
+				return cleanedArgs, err
+			}
 
-      continue
-    }
+			flags.Set(util.HandyCiFlagWorkspace, arg)
 
-    if (args[i] == "--"+util.HandyCiFlagGroup || args[i] == "-"+util.HandyCiFlagGroupShorthand) &&
-      len(args) >= i+1 {
-      flags.Set(util.HandyCiFlagGroup, args[i+1])
+			i++
 
-      i++
+			continue
+		}
 
-      continue
-    }
+		if args[i] == "--"+util.HandyCiFlagGroup || args[i] == "-"+util.HandyCiFlagGroupShorthand {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
 
-    if (args[i] == "--"+util.HandyCiFlagRepositories || args[i] == "-"+util.HandyCiFlagRepositoriesShorthand) &&
-      len(args) >= i+1 {
-      flags.Set(util.HandyCiFlagRepositories, args[i+1])
+			if err != nil {
+				return cleanedArgs, err
+			}
 
-      i++
+			flags.Set(util.HandyCiFlagGroup, arg)
 
-      continue
-    }
+			i++
 
-    if args[i] == "--"+util.HandyCiFlagContinue || args[i] == "-"+util.HandyCiFlagContinueShorthand {
-      flags.Set(util.HandyCiFlagContinue, "true")
+			continue
+		}
 
-      continue
-    }
+		if args[i] == "--"+util.HandyCiFlagRepositories || args[i] == "-"+util.HandyCiFlagRepositoriesShorthand {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
 
-    if (args[i] == "--"+util.HandyCiFlagFrom || args[i] == "-"+util.HandyCiFlagFromShorthand) &&
-      len(args) >= i+1 {
-      flags.Set(util.HandyCiFlagFrom, args[i+1])
+			if err != nil {
+				return cleanedArgs, err
+			}
 
-      i++
+			flags.Set(util.HandyCiFlagRepositories, arg)
 
-      continue
-    }
+			i++
 
-    if args[i] == "--"+util.HandyCiFlagDryRun {
-      flags.Set(util.HandyCiFlagDryRun, "true")
+			continue
+		}
 
-      continue
-    }
+		if args[i] == "--"+util.HandyCiFlagTags && len(args) >= i+1 {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
 
-    if args[i] == "--"+util.HandyCiFlagSkip && len(args) >= i+1 {
-      flags.Set(util.HandyCiFlagSkip, args[i+1])
+			if err != nil {
+				return cleanedArgs, err
+			}
 
-      i++
+			flags.Set(util.HandyCiFlagTags, arg)
 
-      continue
-    }
+			i++
 
-    if args[i] == "--"+util.HandyCiFlagConfig && len(args) >= i+1 {
-      flags.Set(util.HandyCiFlagConfig, args[i+1])
+			continue
+		}
 
-      i++
+		if args[i] == "--"+util.HandyCiFlagFrom || args[i] == "-"+util.HandyCiFlagFromShorthand {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
 
-      continue
-    }
+			if err != nil {
+				return cleanedArgs, err
+			}
 
-    if args[i] == "--"+util.HandyCiFlagHelp {
-      flags.Set(util.HandyCiFlagHelp, "true")
+			flags.Set(util.HandyCiFlagFrom, arg)
 
-      continue
-    }
+			i++
 
-    if args[i] == "--"+util.HandyCiExecFlagNonStrict {
-      flags.Set(util.HandyCiExecFlagNonStrict, "true")
+			continue
+		}
 
-      continue
-    }
+		if args[i] == "--"+util.HandyCiFlagSkip && len(args) >= i+1 {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
 
-    cleanedArgs = append(cleanedArgs, args[i])
-  }
+			if err != nil {
+				return cleanedArgs, err
+			}
 
-  return cleanedArgs
+			flags.Set(util.HandyCiFlagSkip, arg)
+
+			i++
+
+			continue
+		}
+
+		if args[i] == "--"+util.HandyCiFlagContinue || args[i] == "-"+util.HandyCiFlagContinueShorthand {
+			arg, err := parseFlagAndArg(args, i, args[i], false)
+
+			if err != nil {
+				return cleanedArgs, err
+			}
+
+			flags.Set(util.HandyCiFlagContinue, arg)
+
+			continue
+		}
+
+		if args[i] == "--"+util.HandyCiExecFlagNonStrict {
+			arg, err := parseFlagAndArg(args, i, args[i], false)
+
+			if err != nil {
+				return cleanedArgs, err
+			}
+
+			flags.Set(util.HandyCiExecFlagNonStrict, arg)
+
+			continue
+		}
+
+		if args[i] == "--"+util.HandyCiFlagConfig && len(args) >= i+1 {
+			arg, err := parseFlagAndArg(args, i, args[i], true)
+
+			if err != nil {
+				return cleanedArgs, err
+			}
+
+			flags.Set(util.HandyCiFlagConfig, arg)
+
+			i++
+
+			continue
+		}
+
+		if args[i] == "--"+util.HandyCiFlagDryRun {
+			arg, err := parseFlagAndArg(args, i, args[i], false)
+
+			if err != nil {
+				return cleanedArgs, err
+			}
+
+			flags.Set(util.HandyCiFlagDryRun, arg)
+
+			continue
+		}
+
+		if args[i] == "--"+util.HandyCiFlagHelp {
+			arg, err := parseFlagAndArg(args, i, args[i], false)
+
+			if err != nil {
+				return cleanedArgs, err
+			}
+
+			flags.Set(util.HandyCiFlagHelp, arg)
+
+			continue
+		}
+
+		cleanedArgs = append(cleanedArgs, args[i])
+	}
+
+	return cleanedArgs, nil
+}
+
+func parseFlagAndArg(args []string, i int, flag string, withValue bool) (string, error) {
+	if len(args) == i+1 {
+		return "", ParseError{
+			"Value for flag " + flag + " is required, use \"handy-ci --help\" for more information.",
+		}
+	}
+
+	if withValue {
+		return args[i+1], nil
+	}
+
+	return "true", nil
 }
 
 type executionWriter struct {
 }
 
 func NewWriter() io.Writer {
-  return executionWriter{}
+	return executionWriter{}
 }
 
 func (e executionWriter) Write(p []byte) (int, error) {
-  output := fmt.Sprintf("%s", p)
+	output := fmt.Sprintf("%s", p)
 
-  if strings.Contains(output, "\n") {
-    outputArgs := strings.Split(output, "\n")
+	if strings.Contains(output, "\n") {
+		outputArgs := strings.Split(output, "\n")
 
-    var realOutputArgs []interface{}
+		var realOutputArgs []interface{}
 
-    for i, outputArg := range outputArgs {
-      realOutputArgs = append(realOutputArgs, outputArg)
+		for i, outputArg := range outputArgs {
+			realOutputArgs = append(realOutputArgs, outputArg)
 
-      if i != len(outputArgs)-1 {
-        realOutputArgs = append(realOutputArgs, "\n", aurora.Green("[Handy CI]"), " ")
-      }
-    }
+			if i != len(outputArgs)-1 {
+				realOutputArgs = append(realOutputArgs, "\n", aurora.Green("[Handy CI]"), " ")
+			}
+		}
 
-    fmt.Print(realOutputArgs...)
-  } else {
-    fmt.Print(output)
-  }
+		fmt.Print(realOutputArgs...)
+	} else {
+		fmt.Print(output)
+	}
 
-  return len(p), nil
+	return len(p), nil
 }

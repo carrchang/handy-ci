@@ -14,9 +14,9 @@ var cfgFile string
 
 // rootCommand represents the base command when called without any subcommands
 var rootCommand = &cobra.Command{
-  Use:                util.HandyCiName,
-  Short:              "Handy CI is a tool for managing and building multi-repository source code on developer host.",
-  DisableFlagParsing: true,
+	Use:                util.HandyCiName,
+	Short:              "Handy CI is a tool for managing and building multi-repository source code on developer host.",
+	DisableFlagParsing: true,
 }
 
 var usageTemplate = `
@@ -56,60 +56,62 @@ var helpTemplate = `
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCommand.
 func Execute() {
-  if err := rootCommand.Execute(); err != nil {
-    os.Exit(1)
-  }
+	if err := rootCommand.Execute(); err != nil {
+		os.Exit(1)
+	}
 }
 
 func init() {
-  cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initConfig)
 
-  rootCommand.CompletionOptions.DisableDefaultCmd = true
+	rootCommand.CompletionOptions.DisableDefaultCmd = true
 
-  rootCommand.SetUsageTemplate(usageTemplate)
-  rootCommand.SetHelpTemplate(helpTemplate)
+	rootCommand.SetUsageTemplate(usageTemplate)
+	rootCommand.SetHelpTemplate(helpTemplate)
 
-  rootCommand.SuggestionsMinimumDistance = 2
+	rootCommand.SuggestionsMinimumDistance = 2
 
-  rootCommand.PersistentFlags().SortFlags = false
-  rootCommand.Flags().SortFlags = false
+	rootCommand.PersistentFlags().SortFlags = false
+	rootCommand.Flags().SortFlags = false
 
-  rootCommand.PersistentFlags().StringP(
-    util.HandyCiFlagWorkspace, util.HandyCiFlagWorkspaceShorthand, "", "Execute command in workspace")
-  rootCommand.PersistentFlags().StringP(
-    util.HandyCiFlagGroup, util.HandyCiFlagGroupShorthand, "", "Execute command in group")
-  rootCommand.PersistentFlags().StringP(
-    util.HandyCiFlagRepositories, util.HandyCiFlagRepositoriesShorthand,
-    "", "Execute command in comma-delimited list of repositories")
-  rootCommand.PersistentFlags().BoolP(
-    util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
-  rootCommand.PersistentFlags().Bool(util.HandyCiFlagDryRun, false, "Only print the command and execution path")
-  rootCommand.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
-  rootCommand.PersistentFlags().StringP(
-    util.HandyCiFlagFrom, util.HandyCiFlagFromShorthand, "", "Execute command from repository to end")
+	rootCommand.PersistentFlags().StringP(
+		util.HandyCiFlagWorkspace, util.HandyCiFlagWorkspaceShorthand, "", "Execute command in workspace")
+	rootCommand.PersistentFlags().StringP(
+		util.HandyCiFlagGroup, util.HandyCiFlagGroupShorthand, "", "Execute command in group")
+	rootCommand.PersistentFlags().StringP(
+		util.HandyCiFlagRepositories, util.HandyCiFlagRepositoriesShorthand,
+		"", "Execute command in comma-delimited list of repositories")
+	rootCommand.PersistentFlags().String(util.HandyCiFlagTags, "", "Filter repositories by tags in comma-delimited list")
+	rootCommand.PersistentFlags().StringP(
+		util.HandyCiFlagFrom, util.HandyCiFlagFromShorthand, "", "Execute command from repository to end")
+	rootCommand.PersistentFlags().String(util.HandyCiFlagSkip, "", "Skip execution in comma-delimited list of repositories")
 
-  configFlagUsage := "Config file (default is " + util.Home() +
-    string(os.PathSeparator) + ".handy-ci" + string(os.PathSeparator) + "config.yaml)"
+	rootCommand.PersistentFlags().BoolP(
+		util.HandyCiFlagContinue, util.HandyCiFlagContinueShorthand, false, "Skip failed command and continue")
 
-  rootCommand.PersistentFlags().String(util.HandyCiFlagConfig, "", configFlagUsage)
-  rootCommand.PersistentFlags().Bool(util.HandyCiFlagHelp, false, "Print usage")
-  rootCommand.PersistentFlags().Lookup(util.HandyCiFlagHelp).Hidden = true
+	configFlagUsage := "Config file (default is " + util.Home() +
+		string(os.PathSeparator) + ".handy-ci" + string(os.PathSeparator) + "config.yaml)"
+	rootCommand.PersistentFlags().String(util.HandyCiFlagConfig, "", configFlagUsage)
+
+	rootCommand.PersistentFlags().Bool(util.HandyCiFlagDryRun, false, "Only print the command and execution path")
+	rootCommand.PersistentFlags().Bool(util.HandyCiFlagHelp, false, "Print usage")
+	rootCommand.PersistentFlags().Lookup(util.HandyCiFlagHelp).Hidden = true
 }
 
 func initConfig() {
-  if cfgFile != "" {
-    viper.SetConfigFile(cfgFile)
-  } else {
-    viper.AddConfigPath(util.Home() + string(os.PathSeparator) + "." + util.HandyCiName)
-    viper.SetConfigName(util.HandyCiFlagConfig)
-  }
+	if cfgFile != "" {
+		viper.SetConfigFile(cfgFile)
+	} else {
+		viper.AddConfigPath(util.Home() + string(os.PathSeparator) + "." + util.HandyCiName)
+		viper.SetConfigName(util.HandyCiFlagConfig)
+	}
 
-  viper.AutomaticEnv()
+	viper.AutomaticEnv()
 
-  if err := viper.ReadInConfig(); err != nil {
-    util.Println("Using config file:", viper.ConfigFileUsed())
-    util.Println(err)
-  }
+	if err := viper.ReadInConfig(); err != nil {
+		util.Println("Using config file:", viper.ConfigFileUsed())
+		util.Println(err)
+	}
 
-  config.Initialize()
+	config.Initialize()
 }
