@@ -2,30 +2,28 @@ package execution
 
 import (
 	"fmt"
-	"github.com/logrusorgru/aurora"
-	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"io"
 	"os"
 	"os/exec"
-	"slices"
 	"strings"
+
+	"github.com/logrusorgru/aurora"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	"github.com/carrchang/handy-ci/config"
 	"github.com/carrchang/handy-ci/util"
 )
 
 func Execute(command *cobra.Command, args []string, executionParser Parser) {
-	var err error
-
-	args, err = ParseFlagsAndArgs(command.Flags(), args)
+	cleanedArgs, err := ParseFlagsAndArgs(command.Flags(), args)
 
 	if err != nil {
 		fmt.Printf("\n%v\n\n", err)
 		return
 	}
 
-	err = executionParser.CheckArgs(command, args)
+	err = executionParser.CheckArgs(command, cleanedArgs)
 
 	if err != nil {
 		fmt.Printf("\n%v\n\n", err)
@@ -39,7 +37,7 @@ func Execute(command *cobra.Command, args []string, executionParser Parser) {
 		return
 	}
 
-	execInWorkspaces(command, args, executionParser)
+	execInWorkspaces(command, cleanedArgs, executionParser)
 }
 
 func execInWorkspaces(command *cobra.Command, args []string, executionParser Parser) error {
@@ -164,7 +162,7 @@ func execInRepositories(
 
 func repositoryTagsContainAllTagsAsArgument(repository config.Repository, tagsAsArgument []string) bool {
 	for _, tagAsArgument := range tagsAsArgument {
-		if !slices.Contains(repository.Tags, tagAsArgument) {
+		if tagAsArgument != "" && !util.ContainArgs(repository.Tags, tagAsArgument) {
 			return false
 		}
 	}
@@ -274,7 +272,7 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 			continue
 		}
 
-		if args[i] == "--"+util.HandyCiFlagTags && len(args) >= i+1 {
+		if args[i] == "--"+util.HandyCiFlagTags {
 			arg, err := parseFlagAndArg(args, i, args[i], true)
 
 			if err != nil {
@@ -302,7 +300,7 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 			continue
 		}
 
-		if args[i] == "--"+util.HandyCiFlagSkip && len(args) >= i+1 {
+		if args[i] == "--"+util.HandyCiFlagSkip {
 			arg, err := parseFlagAndArg(args, i, args[i], true)
 
 			if err != nil {
@@ -310,8 +308,6 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 			}
 
 			flags.Set(util.HandyCiFlagSkip, arg)
-
-			i++
 
 			continue
 		}
@@ -340,7 +336,7 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 			continue
 		}
 
-		if args[i] == "--"+util.HandyCiFlagConfig && len(args) >= i+1 {
+		if args[i] == "--"+util.HandyCiFlagConfig {
 			arg, err := parseFlagAndArg(args, i, args[i], true)
 
 			if err != nil {
@@ -385,14 +381,14 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 }
 
 func parseFlagAndArg(args []string, i int, flag string, withValue bool) (string, error) {
-	if len(args) == i+1 {
-		return "", ParseError{
-			"Value for flag " + flag + " is required, use \"handy-ci --help\" for more information.",
-		}
-	}
-
 	if withValue {
-		return args[i+1], nil
+		if len(args) == i+1 {
+			return "", ParseError{
+				"Value for flag " + flag + " is required, use \"handy-ci --help\" for more information.",
+			}
+		} else {
+			return args[i+1], nil
+		}
 	}
 
 	return "true", nil
