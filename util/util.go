@@ -48,8 +48,7 @@ func Println(a ...interface{}) (n int, err error) {
 }
 
 func ContainArgs(args []string, arg string) bool {
-	var currentArg string
-	for _, currentArg = range args {
+	for _, currentArg := range args {
 		if currentArg == arg {
 			return true
 		}
