@@ -309,6 +309,8 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 
 			flags.Set(util.HandyCiFlagSkip, arg)
 
+			i++
+
 			continue
 		}
 
@@ -320,18 +322,6 @@ func ParseFlagsAndArgs(flags *pflag.FlagSet, args []string) ([]string, error) {
 			}
 
 			flags.Set(util.HandyCiFlagContinue, arg)
-
-			continue
-		}
-
-		if args[i] == "--"+util.HandyCiExecFlagNonStrict {
-			arg, err := parseFlagAndArg(args, i, args[i], false)
-
-			if err != nil {
-				return cleanedArgs, err
-			}
-
-			flags.Set(util.HandyCiExecFlagNonStrict, arg)
 
 			continue
 		}
