@@ -15,6 +15,11 @@ type ExecExecution struct {
 
 func (s ExecExecution) CheckArgs(command *cobra.Command, args []string) error {
 	if command.Use == "exec" {
+		// Allow running with no explicit script -> default script resolution in Parse()
+		if len(args) == 0 {
+			return nil
+		}
+
 		nonStrict, _ := command.Flags().GetBool(util.HandyCiExecFlagNonStrict)
 
 		if !nonStrict {
