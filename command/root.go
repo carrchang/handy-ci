@@ -109,8 +109,9 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
-		util.Println("Using config file:", viper.ConfigFileUsed())
 		util.Println(err)
+	} else {
+		util.Println("Using config file:", viper.ConfigFileUsed())
 	}
 
 	config.Initialize()
