@@ -92,14 +92,24 @@ func execInRepositories(
 	command *cobra.Command, args []string, executionParser Parser, workspace config.Workspace, group config.Group) error {
 	var targetRepositories []string
 	targetRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagRepositories)
-	for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
-		targetRepositories = append(targetRepositories, strings.Trim(targetRepository, " "))
+	if targetRepositoriesInString != "" {
+		for _, targetRepository := range strings.Split(targetRepositoriesInString, ",") {
+			trimmed := strings.Trim(targetRepository, " ")
+			if trimmed != "" {
+				targetRepositories = append(targetRepositories, trimmed)
+			}
+		}
 	}
 
 	var tagsAsArgument []string
 	tagsAsArgumentInString, _ := command.Flags().GetString(util.HandyCiFlagTags)
-	for _, tagAsArgumentInString := range strings.Split(tagsAsArgumentInString, ",") {
-		tagsAsArgument = append(tagsAsArgument, strings.Trim(tagAsArgumentInString, " "))
+	if tagsAsArgumentInString != "" {
+		for _, tagAsArgumentInString := range strings.Split(tagsAsArgumentInString, ",") {
+			trimmed := strings.Trim(tagAsArgumentInString, " ")
+			if trimmed != "" {
+				tagsAsArgument = append(tagsAsArgument, trimmed)
+			}
+		}
 	}
 
 	toBeContinue, _ := command.Flags().GetBool(util.HandyCiFlagContinue)
@@ -107,8 +117,13 @@ func execInRepositories(
 
 	var skippedRepositories []string
 	skippedRepositoriesInString, _ := command.Flags().GetString(util.HandyCiFlagSkip)
-	for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
-		skippedRepositories = append(skippedRepositories, strings.Trim(skippedRepository, " "))
+	if skippedRepositoriesInString != "" {
+		for _, skippedRepository := range strings.Split(skippedRepositoriesInString, ",") {
+			trimmed := strings.Trim(skippedRepository, " ")
+			if trimmed != "" {
+				skippedRepositories = append(skippedRepositories, trimmed)
+			}
+		}
 	}
 
 	dryRun, _ := command.Flags().GetBool(util.HandyCiFlagDryRun)
@@ -176,11 +191,12 @@ func execInRepository(
 	util.Printf("PATH: %s\n", repository.Name)
 	executions, err := executionParser.Parse(command, args, workspace, group, repository)
 
+	if err != nil && !toBeContinue {
+		util.Printf("%v\n", err.Error())
+		return 0, err
+	}
+
 	for i, execution := range executions {
-		if err != nil && !toBeContinue {
-			util.Printf("%v\n", err.Error())
-			return i, err
-		}
 
 		util.Printf("SCRIPT: %s %s\n", execution.Command, strings.Join(execution.Args, " "))
 		util.Printf("PATH: %s\n", execution.Path)

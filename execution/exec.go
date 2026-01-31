@@ -119,10 +119,15 @@ func (s ExecExecution) Parse(
 
 			for _, scriptDefinition := range ScriptDefinitions() {
 				if scriptDefinition.Name == currentScript {
-					var args = strings.Split(scriptDefinition.DefaultArgs, " ")
+					if scriptDefinition.DefaultArgs != "" {
+						var args = strings.Split(scriptDefinition.DefaultArgs, " ")
 
-					for _, arg := range args {
-						executionArgs = append(executionArgs, strings.Trim(arg, " "))
+						for _, arg := range args {
+							trimmed := strings.Trim(arg, " ")
+							if trimmed != "" {
+								executionArgs = append(executionArgs, trimmed)
+							}
+						}
 					}
 				}
 			}

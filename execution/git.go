@@ -22,17 +22,10 @@ func (s GitExecution) Parse(
   command *cobra.Command, args []string,
   workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
   var path string
-  var err error
 
   path = RepositoryPath(workspace, group, repository)
 
   if util.ContainArgs(args, "clone") {
-    _, err = os.Stat(path)
-
-    if os.IsNotExist(err) {
-      err = nil
-    }
-
     args = append(args, RepositoryRemoteURL(repository, "origin"))
     args = append(args, repository.Name)
 
@@ -50,16 +43,15 @@ func (s GitExecution) Parse(
   }
 
   if util.ContainArgs(args, "remote") && util.ContainArgs(args, "check") {
-    args = []string{}
-    args = append(args, "remote")
+    baseArgs := []string{"remote"}
 
     var executions []Execution
     var remote config.GitRemote
-    var executionArgs []string
 
     for _, remote = range repository.Remotes {
       if remote.Name == "origin" {
-        executionArgs = args
+        executionArgs := make([]string, len(baseArgs))
+        copy(executionArgs, baseArgs)
         executionArgs = append(executionArgs, "set-url")
         executionArgs = append(executionArgs, remote.Name)
         executionArgs = append(executionArgs, remote.URL)
@@ -70,25 +62,27 @@ func (s GitExecution) Parse(
           Args:    executionArgs,
         })
       } else {
-        executionArgs = args
-        executionArgs = append(executionArgs, "remove")
-        executionArgs = append(executionArgs, remote.Name)
+        removeArgs := make([]string, len(baseArgs))
+        copy(removeArgs, baseArgs)
+        removeArgs = append(removeArgs, "remove")
+        removeArgs = append(removeArgs, remote.Name)
 
         executions = append(executions, Execution{
           Command: command.Use,
           Path:    path,
-          Args:    executionArgs,
+          Args:    removeArgs,
         })
 
-        executionArgs = args
-        executionArgs = append(executionArgs, "add")
-        executionArgs = append(executionArgs, remote.Name)
-        executionArgs = append(executionArgs, remote.URL)
+        addArgs := make([]string, len(baseArgs))
+        copy(addArgs, baseArgs)
+        addArgs = append(addArgs, "add")
+        addArgs = append(addArgs, remote.Name)
+        addArgs = append(addArgs, remote.URL)
 
         executions = append(executions, Execution{
           Command: command.Use,
           Path:    path,
-          Args:    executionArgs,
+          Args:    addArgs,
         })
       }
     }
