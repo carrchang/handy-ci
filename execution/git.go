@@ -22,7 +22,6 @@ func (s GitExecution) Parse(
   command *cobra.Command, args []string,
   workspace config.Workspace, group config.Group, repository config.Repository) ([]Execution, error) {
   var path string
-  var err error
 
   path = RepositoryPath(workspace, group, repository)
 
